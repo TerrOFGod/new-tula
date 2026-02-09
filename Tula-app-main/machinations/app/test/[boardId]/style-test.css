@@ -1,0 +1,59 @@
+.context-menu {
+  background: white;
+  border-style: solid;
+  box-shadow: 10px 19px 20px rgba(0, 0, 0, 10%);
+  position: absolute;
+  font-size: 0.8rem;
+  font-weight: bold;
+  border-radius: 8px;
+  z-index: 10;
+}
+
+.context-menu button {
+  border: none;
+  display: block;
+  padding: 0.5em;
+  text-align: left;
+  width: 100%;
+}
+
+.context-menu button:hover {
+  background: rgb(234, 248, 252);
+  border-radius: 8px;
+}
+
+.position_panel {
+  margin-top: 0 !important;
+  margin-left: 0 !important;
+  height: 785px !important;
+  z-index: 100 !important;
+}
+.info_panel {
+  margin-top: 0 !important;
+  margin-right: 0 !important;
+}
+.analytics_panel {
+  background: white;
+  margin-top: 0 !important;
+  margin-right: 0 !important;
+  z-index: 10000 !important;
+  width: 450px;
+  height: 785px;
+  overflow-y: auto !important;
+  padding-top: 10px;
+}
+.values_analytics {
+  margin: 2px 50px 20px;
+}
+.analytics__title {
+  display: flex;
+  justify-content: space-between;
+}
+.vesrsions-diff_panel {
+  margin-top: 0 !important;
+  margin-left: 0 !important;
+  width: 850px !important;
+  z-index: 100 !important;
+  position: fixed;
+  padding-left: 100px;
+}

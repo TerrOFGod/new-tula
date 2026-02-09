@@ -1,0 +1,111 @@
+.delayNode{
+    border: 2px solid red;
+    position: relative;
+    height: 50px;
+    width: 50px;
+    overflow: hidden;
+    border-radius: 5px;
+    display: flex;
+    background: white;
+    justify-content: center;
+    align-items: center;
+    font-weight: bold;
+}
+
+.consumerNode{
+    border: 2px solid blue;
+    position: relative;
+    height: 50px;
+    width: 50px;
+    overflow: hidden;
+    border-radius: 100%;
+    display: flex;
+    background: white;
+    justify-content: center;
+    align-items: center;
+    font-weight: bold;
+}
+
+.converterNode{
+    border: 2px solid blue;
+    position: relative;
+    height: 50px;
+    width: 50px;
+    overflow: hidden;
+    border-radius: 100%;
+    display: flex;
+    background: white;
+    justify-content: center;
+    align-items: center;
+    font-weight: bold;
+}
+
+.endNode{
+    border: 2px solid black;
+    position: relative;
+    height: 50px;
+    width: 50px;
+    overflow: hidden;
+    border-radius: 5px;
+    display: flex;
+    background: white;
+    justify-content: center;
+    align-items: center;
+    font-weight: bold;
+}
+
+.gateNode{
+    border: 2px solid blue;
+    position: relative;
+    height: 50px;
+    width: 50px;
+    overflow: hidden;
+    border-radius: 100%;
+    display: flex;
+    background: white;
+    justify-content: center;
+    align-items: center;
+    font-weight: bold;
+}
+
+.poolNode{
+    border: 2px solid blue;
+    position: relative;
+    height: 50px;
+    width: 50px;
+    overflow: hidden;
+    border-radius: 100%;
+    display: flex;
+    background: white;
+    justify-content: center;
+    align-items: center;
+    font-weight: bold;
+}
+
+.sourceNode{
+    border: 2px solid greenyellow;
+    position: relative;
+    height: 50px;
+    width: 50px;
+    overflow: hidden;
+    border-radius: 100%;
+    display: flex;
+    background: white;
+    justify-content: center;
+    align-items: center;
+    font-weight: bold;
+}
+
+.randomNode{
+    border: 2px solid red;
+    position: relative;
+    height: 50px;
+    width: 50px;
+    overflow: hidden;
+    border-radius: 5px;
+    display: flex;
+    background: white;
+    justify-content: center;
+    align-items: center;
+    font-weight: bold;
+}

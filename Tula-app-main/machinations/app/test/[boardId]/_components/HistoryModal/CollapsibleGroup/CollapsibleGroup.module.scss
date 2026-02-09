@@ -1,0 +1,27 @@
+.group {
+  margin-bottom: 1rem;
+
+  &Header {
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    color: #5f6368;
+    font-size: 14px;
+    padding: 8px 0;
+    border-bottom: 1px solid #e0e0e0;
+    margin-bottom: 12px;
+
+    &:hover {
+      background: #f1f3f5;
+    }
+  }
+
+  &Content {
+    padding: 0.5rem;
+  }
+}
+
+.toggleIcon {
+}

@@ -1,0 +1,83 @@
+.board {
+  background: white;
+  height: 800px;
+  width: 300px;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.board h1 {
+  font-size: 16px !important;
+  padding-bottom: 10px;
+}
+
+.hint_btn {
+  background: transparent;
+  font-size: 20px !important;
+  font-weight: 700;
+  color: black;
+  padding: 0;
+}
+
+.content {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+.content__items {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.date_info {
+  position: absolute;
+  bottom: 1rem;
+  > h2 {
+    padding-bottom: 0.5rem;
+  }
+}
+
+.description {
+  display: flex;
+  flex-direction: column;
+  > textarea {
+    height: 270px;
+    padding: 1rem 0.5rem;
+    background: rgb(233, 238, 252);
+    border-radius: 10px;
+    border: 1px dashed white;
+    margin-bottom: 15px;
+  }
+}
+.saveButton {
+  padding: 5px 10px;
+  background-color: #000000; /* Красный цвет */
+  color: #fff; /* Белый цвет текста */
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.closeButton {
+  top: 0;
+  right: 0;
+  padding: 5px 10px;
+  background-color: #000000; /* Красный цвет */
+  color: #fff; /* Белый цвет текста */
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.closeButton:hover {
+  background-color: #cc0000; /* Темно-красный цвет при наведении */
+}

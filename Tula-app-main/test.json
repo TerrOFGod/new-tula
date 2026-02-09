@@ -1,0 +1,28 @@
+{
+  "description": "source wood sheme",
+  "edge_type": "bezier",
+  "iteration_counts": 10,
+  "time_step": 1,
+  "games_count": 5,
+  "elements": [
+    {
+      "id": 1,
+      "element_type": "node",
+      "struct": "source",
+      "label": "generator"
+    },
+    {
+      "id": 2,
+      "element_type": "node",
+      "struct": "pool",
+      "label": "wood"
+    },
+    {
+      "id": 3,
+      "element_type": "edge",
+      "source_id": 1,
+      "target_id": 2,
+      "value": 4
+    }
+  ]
+}

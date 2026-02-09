@@ -1,0 +1,5 @@
+nestJs - npm run start:dev
+prisma update - prisma db push
+
+nextJs - npm run dev
+convex - npx convex dev
