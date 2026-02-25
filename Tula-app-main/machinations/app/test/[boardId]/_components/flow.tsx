@@ -25,6 +25,7 @@ import { Id } from "@/convex/_generated/dataModel";
 import { useSaveHandlerOnHotkeyKeydown } from "@/app/hooks/useSaveHandlerOnKeydown";
 import { HistoryModal } from "./HistoryModal";
 import { useInitializeBoard } from "@/app/hooks/useInitializeBoard";
+import { NodeDetailsPanel } from "@/components/NodeDetailsPanel";
 
 // const selector = (state: RFState) => ({
 //   nodes: state.nodes,
@@ -208,6 +209,7 @@ const Flow = ({ boardId }: FlowProps) => {
         <Background color="blue" gap={16} className="bg-blue-100" />
         {analytics && <Metrics />}
         <BottomPanel />
+        <NodeDetailsPanel />
       </ReactFlow>
     </main>
   );

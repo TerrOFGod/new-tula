@@ -33,6 +33,7 @@ export type RFState = {
   currentVersion: number;
   updatedTime: number | null;
   savingStatus: BoardSavingStatus;
+  edgeType: 'custom' | 'probabilistic' | 'conditional';
   nodes: Node[];
   edges: Edge[];
   previousState: PreviousState | null;
@@ -47,8 +48,10 @@ export type RFState = {
   onNodesChange: OnNodesChange;
   setNodeName: (id: string, name: string) => void;
   setNodeLabel: (id: string, count: number) => void;
+  updateNodeData: (nodeId: string, newData: any) => void;
   onEdgesChange: OnEdgesChange;
   getEdgeTargetNode: (id: string) => void;
+  setEdgeType: (type: 'custom' | 'probabilistic' | 'conditional') => void;
   setEdgeData: (id: string, data: number) => void;
   setEdgeAnimated: (isPlay: boolean) => void;
   onConnect: (connection: any) => void;
@@ -145,15 +148,25 @@ const useStore = createWithEqualityFn<WithLiveblocks<RFState>>()(
           edges: applyEdgeChanges(changes, get().edges),
         });
       },
+      edgeType: 'custom' as 'custom' | 'probabilistic' | 'conditional',
+      setEdgeType: (type: 'custom' | 'probabilistic' | 'conditional') => set({ edgeType: type }),
       onConnect: (connection: Connection) => {
-        const newEdge = {
+        const edgeType = get().edgeType;
+        const baseEdge = {
           ...connection,
           id: "id" + new Date(),
-          type: "custom",
+          type: edgeType,
           animated: false,
           markerEnd: markerEnd,
-          data: 1,
         };
+        let newEdge;
+        if (edgeType === 'probabilistic') {
+          newEdge = { ...baseEdge, data: { probability: 0.5 } };
+        } else if (edgeType === 'conditional') {
+          newEdge = { ...baseEdge, data: { condition: '' } };
+        } else {
+          newEdge = { ...baseEdge, data: 1 };
+        }
 
         set({
           edges: addEdge(newEdge, get().edges),
@@ -180,6 +193,13 @@ const useStore = createWithEqualityFn<WithLiveblocks<RFState>>()(
           nodes: state.nodes.filter((node) => node.id !== id),
           edges: state.edges.filter(
             (edge) => edge.source !== id && edge.target !== id
+          ),
+        }));
+      },
+      updateNodeData: (nodeId: string, newData: any) => {
+        set((state) => ({
+          nodes: state.nodes.map(node => 
+            node.id === nodeId ? { ...node, data: newData } : node
           ),
         }));
       },
@@ -265,15 +285,73 @@ const useStore = createWithEqualityFn<WithLiveblocks<RFState>>()(
       addNode: (struct: StructType) => {
         let newNode;
 
-        newNode = {
-          id: nanoid(),
-          type: struct.toLowerCase() + "Node",
-          data: { label: "0", struct: struct, name: "" },
-          position: {
-            x: (Math.random() * window.innerWidth) / 2,
-            y: (Math.random() * window.innerHeight) / 2,
-          },
-        };
+        switch (struct) {
+          case StructType.Entity:
+            newNode = {
+              id: nanoid(),
+              type: 'entityNode',
+              data: { label: '0', struct: StructType.Entity, name: '', states: [], events: [] },
+              position: {
+                x: (Math.random() * window.innerWidth) / 2,
+                y: (Math.random() * window.innerHeight) / 2,
+              },
+            };
+            break;
+          case StructType.State:
+            newNode = {
+              id: nanoid(),
+              type: 'stateNode',
+              data: { label: '0', struct: StructType.State, name: '', valueType: 'int', range: [0, 100] },
+              position: {
+                x: (Math.random() * window.innerWidth) / 2,
+                y: (Math.random() * window.innerHeight) / 2,
+              },
+            };
+            break;
+          case StructType.Event:
+            newNode = {
+              id: nanoid(),
+              type: 'eventNode',
+              data: { label: '0', struct: StructType.Event, name: '', requires: '', effect: '', probability: 0.5 },
+              position: {
+                x: (Math.random() * window.innerWidth) / 2,
+                y: (Math.random() * window.innerHeight) / 2,
+              },
+            };
+            break;
+          case StructType.Rule:
+            newNode = {
+              id: nanoid(),
+              type: 'ruleNode',
+              data: { label: '0', struct: StructType.Rule, name: '', when: '', effect: '' },
+              position: {
+                x: (Math.random() * window.innerWidth) / 2,
+                y: (Math.random() * window.innerHeight) / 2,
+              },
+            };
+            break;
+          case StructType.Operator:
+            newNode = {
+              id: nanoid(),
+              type: 'operatorNode',
+              data: { label: '0', struct: StructType.Operator, operator: 'X' },
+              position: {
+                x: (Math.random() * window.innerWidth) / 2,
+                y: (Math.random() * window.innerHeight) / 2,
+              },
+            };
+            break;
+          default:
+            newNode = {
+              id: nanoid(),
+              type: struct.toLowerCase() + "Node",
+              data: { label: "0", struct: struct, name: "" },
+              position: {
+                x: (Math.random() * window.innerWidth) / 2,
+                y: (Math.random() * window.innerHeight) / 2,
+              },
+            };
+        }
 
         set({
           nodes: [...get().nodes, newNode],

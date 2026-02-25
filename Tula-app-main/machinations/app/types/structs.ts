@@ -10,6 +10,13 @@ import RandomNode from "./../test/[boardId]/_components/_structs/nodeComponents/
 import DelayNode from "./../test/[boardId]/_components/_structs/nodeComponents/delayNode";
 import EndNode from "./../test/[boardId]/_components/_structs/nodeComponents/endNode";
 import consumerNode from "./../test/[boardId]/_components/_structs/nodeComponents/consumerNode";
+import EntityNode from "../test/[boardId]/_components/_structs/nodeComponents/entityNode";
+import EventNode from "../test/[boardId]/_components/_structs/nodeComponents/eventNode";
+import OperatorNode from "../test/[boardId]/_components/_structs/nodeComponents/operatorNode";
+import RuleNode from "../test/[boardId]/_components/_structs/nodeComponents/ruleNode";
+import StateNode from "../test/[boardId]/_components/_structs/nodeComponents/stateNode";
+import ConditionalEdge from "../test/[boardId]/_components/_structs/conditional-edge";
+import ProbabilisticEdge from "../test/[boardId]/_components/_structs/probabilistic-edge";
 
 enum StructType {
   Source = "Source",
@@ -20,6 +27,12 @@ enum StructType {
   Random = "Random",
   Delay = "Delay",
   End = "End",
+    // Новые типы
+  Entity = "Entity",
+  State = "State",
+  Event = "Event",
+  Rule = "Rule",
+  Operator = "Operator",
 }
 export { StructType };
 
@@ -97,8 +110,17 @@ export const nodeTypes = {
   randomNode: RandomNode,
   delayNode: DelayNode,
   endNode: EndNode,
+  entityNode: EntityNode,
+  stateNode: StateNode,
+  eventNode: EventNode,
+  ruleNode: RuleNode,
+  operatorNode: OperatorNode,
 };
-export const edgeTypes = { custom: CustomEdge };
+export const edgeTypes = {
+  custom: CustomEdge,
+  probabilistic: ProbabilisticEdge,
+  conditional: ConditionalEdge,
+};
 
 export interface Graph {
   id: number;

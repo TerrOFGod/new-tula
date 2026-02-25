@@ -12,9 +12,11 @@ import {
   BadgePlus,
   BadgeMinus,
   Eraser,
+  Box, Layers, Zap, Scale, Sigma, Link2, Percent, GitMerge
 } from "lucide-react";
 import useStore, { RFState } from "@/app/store/store";
 import { shallow } from "zustand/shallow";
+import { useState } from "react";
 
 interface ToolbarProps {
   canvasState: CanvasState;
@@ -36,6 +38,7 @@ const selector = (state: RFState) => ({
 export const Toolbar = () => {
   const { addNode } = useStore(selector, shallow);
   const { deleteAll } = useStore();
+  const { edgeType, setEdgeType } = useStore();
 
   return (
     <div className="absolute top-40 left-2 flex flex-col gap-y-4">
@@ -88,6 +91,19 @@ export const Toolbar = () => {
           isActive={false}
           icon={CheckCheck}
         />
+        <div className="bg-white rounded-md p-1.5 flex gap-y-1 flex-col items-center shadow-md">
+          <ToolButton label="Entity" onClick={() => addNode(StructType.Entity)} icon={Box} />
+          <ToolButton label="State" onClick={() => addNode(StructType.State)} icon={Layers} />
+          <ToolButton label="Event" onClick={() => addNode(StructType.Event)} icon={Zap} />
+          <ToolButton label="Rule" onClick={() => addNode(StructType.Rule)} icon={Scale} />
+          <ToolButton label="Operator" onClick={() => addNode(StructType.Operator)} icon={Sigma} />
+        </div>
+
+        <div className="bg-white rounded-md p-1.5 flex gap-x-1 flex-col items-center shadow-md mt-2">
+          <ToolButton label="Default Edge" onClick={() => setEdgeType('custom')} icon={Link2} isActive={edgeType === 'custom'} />
+          <ToolButton label="Probabilistic" onClick={() => setEdgeType('probabilistic')} icon={Percent} isActive={edgeType === 'probabilistic'} />
+          <ToolButton label="Conditional" onClick={() => setEdgeType('conditional')} icon={GitMerge} isActive={edgeType === 'conditional'} />
+        </div>
       </div>
       {/* undo redo */}
       <div className="bg-white rounded-md p-1.5 flex flex-col items-center shadow-md">
