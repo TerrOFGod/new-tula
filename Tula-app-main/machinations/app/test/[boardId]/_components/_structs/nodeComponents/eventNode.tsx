@@ -2,6 +2,7 @@
 import { memo } from "react";
 import { Handle, Position, NodeResizer } from "reactflow";
 import { StructType } from "@/app/types/structs";
+import { useNodeDetails } from "@/app/store/use-node-details";
 
 interface EventNodeProps {
   data: {
@@ -13,12 +14,14 @@ interface EventNodeProps {
     probability?: number;
   };
   selected: boolean;
+  id: string;
 }
 
-const EventNode = memo(({ data, selected }: EventNodeProps) => {
+const EventNode = memo(({ data, selected, id }: EventNodeProps) => {
   const { name, label, requires, effect, probability } = data;
+    const { openDetails } = useNodeDetails();
   return (
-    <div>
+    <div onDoubleClick={() => openDetails(id, 'event')}>
       <NodeResizer color="#4A90E2" isVisible={selected} minWidth={100} minHeight={60} />
       <Handle type="target" position={Position.Top} />
       <div style={{

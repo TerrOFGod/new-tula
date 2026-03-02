@@ -2,6 +2,7 @@
 import { memo } from "react";
 import { Handle, Position, NodeResizer } from "reactflow";
 import { StructType } from "@/app/types/structs";
+import { useNodeDetails } from "@/app/store/use-node-details";
 
 interface StateNodeProps {
   data: {
@@ -13,12 +14,14 @@ interface StateNodeProps {
     enumValues?: string[];
   };
   selected: boolean;
+  id: string;
 }
 
-const StateNode = memo(({ data, selected }: StateNodeProps) => {
+const StateNode = memo(({ data, selected, id }: StateNodeProps) => {
   const { name, label, valueType, range, enumValues } = data;
+    const { openDetails } = useNodeDetails();
   return (
-    <div>
+    <div onDoubleClick={() => openDetails(id, 'state')}>
       <NodeResizer color="#4A90E2" isVisible={selected} minWidth={80} minHeight={50} />
       <Handle type="target" position={Position.Left} />
       <div style={{

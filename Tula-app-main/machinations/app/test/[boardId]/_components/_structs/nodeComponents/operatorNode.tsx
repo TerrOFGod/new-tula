@@ -2,6 +2,7 @@
 import { memo } from "react";
 import { Handle, Position, NodeResizer } from "reactflow";
 import { StructType } from "@/app/types/structs";
+import { useNodeDetails } from "@/app/store/use-node-details";
 
 const operatorSymbols = {
   X: '◯',
@@ -17,12 +18,14 @@ interface OperatorNodeProps {
     operator?: 'X' | 'F' | 'G' | 'U';
   };
   selected: boolean;
+  id: string;
 }
 
-const OperatorNode = memo(({ data, selected }: OperatorNodeProps) => {
+const OperatorNode = memo(({ data, selected, id }: OperatorNodeProps) => {
   const { operator = 'X' } = data;
+  const { openDetails } = useNodeDetails();
   return (
-    <div>
+    <div onDoubleClick={() => openDetails(id, 'operator')}>
       <NodeResizer color="#4A90E2" isVisible={selected} minWidth={40} minHeight={40} />
       <Handle type="target" position={Position.Left} />
       <div style={{

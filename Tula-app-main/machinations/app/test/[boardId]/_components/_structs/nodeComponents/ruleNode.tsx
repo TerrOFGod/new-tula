@@ -2,6 +2,7 @@
 import { memo } from "react";
 import { Handle, Position, NodeResizer } from "reactflow";
 import { StructType } from "@/app/types/structs";
+import { useNodeDetails } from "@/app/store/use-node-details";
 
 interface RuleNodeProps {
   data: {
@@ -12,12 +13,14 @@ interface RuleNodeProps {
     effect?: string;
   };
   selected: boolean;
+  id: string;
 }
 
-const RuleNode = memo(({ data, selected }: RuleNodeProps) => {
+const RuleNode = memo(({ data, selected, id }: RuleNodeProps) => {
   const { name, label, when, effect } = data;
+  const { openDetails } = useNodeDetails();
   return (
-    <div>
+    <div onDoubleClick={() => openDetails(id, 'rule')}>
       <NodeResizer color="#4A90E2" isVisible={selected} minWidth={100} minHeight={60} />
       <Handle type="target" position={Position.Left} />
       <div style={{
