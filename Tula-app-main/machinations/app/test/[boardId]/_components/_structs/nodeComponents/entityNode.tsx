@@ -25,7 +25,6 @@ const EntityNode = memo(({ data, selected, id }: EntityNodeProps) => {
     <div
       onDoubleClick={() => openDetails(id, 'entity')}
       onClick={() => setIsHovered(!isHovered)}
-
     >
       <NodeResizer color="#4A90E2" isVisible={selected} minWidth={120} minHeight={80} />
       <Handle type="target" position={Position.Top} />

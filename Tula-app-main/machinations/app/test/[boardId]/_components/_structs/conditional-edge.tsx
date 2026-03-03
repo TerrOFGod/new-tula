@@ -1,5 +1,7 @@
+import { useChangeEdgeType } from "@/app/store/use-custom-edge";
+import path from "path";
 import React, { useState } from "react";
-import { EdgeProps, getBezierPath, EdgeLabelRenderer } from "reactflow";
+import { EdgeProps, getBezierPath, EdgeLabelRenderer, getStraightPath, BaseEdge, BezierEdge, StepEdge } from "reactflow";
 
 export default function ConditionalEdge(props: EdgeProps) {
   const {
@@ -13,6 +15,13 @@ export default function ConditionalEdge(props: EdgeProps) {
     id,
   } = props;
   const [condition, setCondition] = useState(data.condition || "");
+
+  const {
+    error,
+    setError,
+    currentEdgesType: currentType,
+  } = useChangeEdgeType();
+
   const [edgePath, labelX, labelY] = getBezierPath({
     sourceX,
     sourceY,
@@ -22,6 +31,14 @@ export default function ConditionalEdge(props: EdgeProps) {
     targetPosition,
   });
 
+  const [basePath] = getStraightPath({
+    sourceX,
+    sourceY,
+    targetX,
+    targetY,
+  });
+
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setCondition(e.target.value);
     // обновить данные ребра
@@ -29,12 +46,9 @@ export default function ConditionalEdge(props: EdgeProps) {
 
   return (
     <>
-      <path
-        id={id}
-        style={{ stroke: '#4A90E2', strokeWidth: 2, strokeDasharray: '5,5' }}
-        d={edgePath}
-        markerEnd={props.markerEnd}
-      />
+      {currentType === "SmoothStep" && <StepEdge {...props}  style={{ ...props.style, stroke: '#4A90E2', strokeWidth: 2, strokeDasharray: '5,5' }}/>}
+      {currentType === "Default" && <BaseEdge style={{ ...props.style, stroke: '#4A90E2', strokeWidth: 2, strokeDasharray: '5,5' }} path={basePath} {...props} />}
+      {currentType == "Bezier" && <BezierEdge style={{ ...props.style, stroke: '#4A90E2', strokeWidth: 2, strokeDasharray: '5,5' }} {...props} />}
       <EdgeLabelRenderer>
         <div
           style={{
