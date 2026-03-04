@@ -12,6 +12,7 @@ export default function ConditionalEdge(props: EdgeProps) {
     sourcePosition,
     targetPosition,
     data = {},
+    style,
     id,
   } = props;
   const [condition, setCondition] = useState(data.condition || "");
@@ -46,9 +47,9 @@ export default function ConditionalEdge(props: EdgeProps) {
 
   return (
     <>
-      {currentType === "SmoothStep" && <StepEdge {...props}  style={{ ...props.style, stroke: '#4A90E2', strokeWidth: 2, strokeDasharray: '5,5' }}/>}
-      {currentType === "Default" && <BaseEdge style={{ ...props.style, stroke: '#4A90E2', strokeWidth: 2, strokeDasharray: '5,5' }} path={basePath} {...props} />}
-      {currentType == "Bezier" && <BezierEdge style={{ ...props.style, stroke: '#4A90E2', strokeWidth: 2, strokeDasharray: '5,5' }} {...props} />}
+      {currentType === "SmoothStep" && <StepEdge {...props}  style={{ ...style, stroke: '#4A90E2', strokeWidth: 2, strokeDasharray: '5,5' }}/>}
+      {currentType === "Default" && <BaseEdge path={basePath} {...props} style={{ ...style, stroke: '#4A90E2', strokeWidth: 2, strokeDasharray: '5,5' }}/>}
+      {currentType == "Bezier" && <BezierEdge {...props} style={{ ...style, stroke: '#4A90E2', strokeWidth: 2, strokeDasharray: '5,5' }}/>}
       <EdgeLabelRenderer>
         <div
           style={{
@@ -57,7 +58,8 @@ export default function ConditionalEdge(props: EdgeProps) {
             background: '#fff',
             padding: '2px 4px',
             borderRadius: '4px',
-            border: '1px solid #ccc',
+            border: '1px solid #4A90E2',
+            fontSize: 12,
             pointerEvents: 'all',
           }}
           className="nodrag nopan"
@@ -67,7 +69,7 @@ export default function ConditionalEdge(props: EdgeProps) {
             placeholder="condition"
             value={condition}
             onChange={handleChange}
-            style={{ width: '100px' }}
+            style={{ width: '80px', border: "none", outline: "none"  }}
           />
         </div>
       </EdgeLabelRenderer>

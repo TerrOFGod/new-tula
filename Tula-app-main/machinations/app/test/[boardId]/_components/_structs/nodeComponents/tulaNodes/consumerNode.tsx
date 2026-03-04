@@ -11,7 +11,8 @@ import {
 } from "reactflow";
 import useStore from "@/app/store/store";
 import { StructType } from "@/app/types/structs";
-import { StyledNode } from "./styled-node";
+import { StyledNode } from "../styled-node";
+import { useNodeDetails } from "@/app/store/use-node-details";
 
 interface DataProps {
   data: {
@@ -20,14 +21,17 @@ interface DataProps {
     name?: string;
   };
   selected: boolean;
+  id: string;
 }
 
 const ConsumerNode = ({
-  data: { label, struct, name },
+  id,
+  data: { label, struct, name, },
   selected,
 }: DataProps) => {
   const { isPlay, onStop, onReset, time } = useAnimateScheme();
   const { setNodeLabel, getEdgeValues } = useStore();
+  const { openDetails } = useNodeDetails();
   const nodeId = useNodeId();
   const edges = useEdges<any>();
   const nodes = useNodes<any>();
@@ -67,13 +71,15 @@ const ConsumerNode = ({
 
   return (
     <>
-      <NodeResizer
-        color="blue"
-        isVisible={selected}
-        minWidth={45}
-        minHeight={45}
-      />
-      <StyledNode struct={struct} label={label} name={name} />
+      <div onDoubleClick={() => openDetails(id, 'consumer')}>
+        <NodeResizer
+          color="blue"
+          isVisible={selected}
+          minWidth={45}
+          minHeight={45}
+        />
+        <StyledNode struct={struct} label={label} name={name} />
+      </div>
     </>
   );
 };

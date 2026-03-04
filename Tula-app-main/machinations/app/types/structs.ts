@@ -1,22 +1,25 @@
 import { Node } from "reactflow";
-import CustomEdge from "../test/[boardId]/_components/_structs/custom-edge";
+import CustomEdge from "../test/[boardId]/_components/_structs/edgeComponents/custom-edge";
 import CustomNode from "./../test/[boardId]/_components/_structs/custom-node";
-import SourceNode from "./../test/[boardId]/_components/_structs/nodeComponents/sourceNode";
-import PoolNode from "./../test/[boardId]/_components/_structs/nodeComponents/poolNode";
-import ConsumerNode from "./../test/[boardId]/_components/_structs/nodeComponents/consumerNode";
-import ConverterNode from "./../test/[boardId]/_components/_structs/nodeComponents/converterNode";
-import GateNode from "./../test/[boardId]/_components/_structs/nodeComponents/gateNode";
-import RandomNode from "./../test/[boardId]/_components/_structs/nodeComponents/randomNode";
-import DelayNode from "./../test/[boardId]/_components/_structs/nodeComponents/delayNode";
-import EndNode from "./../test/[boardId]/_components/_structs/nodeComponents/endNode";
-import consumerNode from "./../test/[boardId]/_components/_structs/nodeComponents/consumerNode";
-import EntityNode from "../test/[boardId]/_components/_structs/nodeComponents/entityNode";
-import EventNode from "../test/[boardId]/_components/_structs/nodeComponents/eventNode";
-import OperatorNode from "../test/[boardId]/_components/_structs/nodeComponents/operatorNode";
-import RuleNode from "../test/[boardId]/_components/_structs/nodeComponents/ruleNode";
-import StateNode from "../test/[boardId]/_components/_structs/nodeComponents/stateNode";
-import ConditionalEdge from "../test/[boardId]/_components/_structs/conditional-edge";
-import ProbabilisticEdge from "../test/[boardId]/_components/_structs/probabilistic-edge";
+import SourceNode from "../test/[boardId]/_components/_structs/nodeComponents/tulaNodes/sourceNode";
+import PoolNode from "../test/[boardId]/_components/_structs/nodeComponents/tulaNodes/poolNode";
+import ConsumerNode from "../test/[boardId]/_components/_structs/nodeComponents/tulaNodes/consumerNode";
+import ConverterNode from "../test/[boardId]/_components/_structs/nodeComponents/tulaNodes/converterNode";
+import GateNode from "../test/[boardId]/_components/_structs/nodeComponents/tulaNodes/gateNode";
+import RandomNode from "../test/[boardId]/_components/_structs/nodeComponents/tulaNodes/randomNode";
+import DelayNode from "../test/[boardId]/_components/_structs/nodeComponents/tulaNodes/delayNode";
+import TriggerNode from "../test/[boardId]/_components/_structs/nodeComponents/tulaNodes/triggerNode";
+import EndNode from "../test/[boardId]/_components/_structs/nodeComponents/tulaNodes/endNode";
+import consumerNode from "../test/[boardId]/_components/_structs/nodeComponents/tulaNodes/consumerNode";
+import EntityNode from "../test/[boardId]/_components/_structs/nodeComponents/specNodes/entityNode";
+import EventNode from "../test/[boardId]/_components/_structs/nodeComponents/specNodes/eventNode";
+import OperatorNode from "../test/[boardId]/_components/_structs/nodeComponents/specNodes/operatorNode";
+import RuleNode from "../test/[boardId]/_components/_structs/nodeComponents/specNodes/ruleNode";
+import StateNode from "../test/[boardId]/_components/_structs/nodeComponents/specNodes/stateNode";
+import ConditionalEdge from "../test/[boardId]/_components/_structs/edgeComponents/conditional-edge";
+import ProbabilisticEdge from "../test/[boardId]/_components/_structs/edgeComponents/probabilistic-edge";
+import TriggerEdge from "../test/[boardId]/_components/_structs/edgeComponents/trigger-edge";
+import ModifierEdge from "../test/[boardId]/_components/_structs/edgeComponents/modifier-edge";
 
 enum StructType {
   Source = "Source",
@@ -26,6 +29,7 @@ enum StructType {
   Gate = "Gate",
   Random = "Random",
   Delay = "Delay",
+  Trigger = "Trigger",
   End = "End",
     // Новые типы
   Entity = "Entity",
@@ -33,6 +37,7 @@ enum StructType {
   Event = "Event",
   Rule = "Rule",
   Operator = "Operator",
+  
 }
 export { StructType };
 
@@ -84,6 +89,12 @@ export type DelayStruct = {
   value?: string;
 };
 
+export type TriggerStruct = {
+  id: number | string;
+  type: StructType.End;
+  value?: string;
+};
+
 export type EndStruct = {
   id: number | string;
   type: StructType.End;
@@ -98,6 +109,7 @@ export type Structs =
   | GateStruct
   | RandomStruct
   | DelayStruct
+  | TriggerStruct
   | EndStruct;
 
 export const nodeTypes = {
@@ -109,6 +121,7 @@ export const nodeTypes = {
   gateNode: GateNode,
   randomNode: RandomNode,
   delayNode: DelayNode,
+  triggerNode: TriggerNode,
   endNode: EndNode,
   entityNode: EntityNode,
   stateNode: StateNode,
@@ -120,6 +133,8 @@ export const edgeTypes = {
   custom: CustomEdge,
   probabilistic: ProbabilisticEdge,
   conditional: ConditionalEdge,
+  trigger: TriggerEdge,
+  modifier: ModifierEdge,
 };
 
 export interface Graph {

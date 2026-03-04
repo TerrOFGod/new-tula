@@ -4,23 +4,32 @@ import { memo, useEffect } from "react";
 import { Edge, NodeResizer, useEdges, useNodeId, useNodes } from "reactflow";
 import useStore from "@/app/store/store";
 import { StructType } from "@/app/types/structs";
-import { StyledNode } from "./styled-node";
+import { StyledNode } from "../styled-node";
+import { useNodeDetails } from "@/app/store/use-node-details";
 
 interface DataProps {
   data: {
     label: string;
     struct: StructType;
     name?: string;
+    conversionIn?: number;
+    conversionOut?: number;
+    converterProbEffects?: any[];
   };
   selected: boolean;
+  id: string;
 }
 
-const ConverterNode = ({
-  data: { label, struct, name },
-  selected,
-}: DataProps) => {
+const ConverterNode = ({ id, data, selected, }: DataProps) => {
+  const { struct, label, name, conversionIn, conversionOut, converterProbEffects } = data;
+  const hasProb = converterProbEffects && converterProbEffects.length > 0;
+  const ratio = `${conversionIn}->${conversionOut}`;
+  const probRatio = hasProb ? `p=${converterProbEffects[0].probability}:${converterProbEffects[0].conversionIn}->${converterProbEffects[0].conversionOut}` : '';
+  const info = hasProb ? probRatio : ratio;
+
   const { isPlay, onStop, onReset, time } = useAnimateScheme();
   const { setNodeLabel, getEdgeValues } = useStore();
+  const { openDetails } = useNodeDetails();
   const nodeId = useNodeId();
   const edges = useEdges<any>();
   const nodes = useNodes<any>();
@@ -61,13 +70,10 @@ const ConverterNode = ({
 
   return (
     <>
-      <NodeResizer
-        color="blue"
-        isVisible={selected}
-        minWidth={45}
-        minHeight={45}
-      />
-      <StyledNode struct={struct} label={label} name={name} />
+      <div onDoubleClick={() => openDetails(id, 'converter')}>
+        <NodeResizer color="blue" isVisible={selected} minWidth={45} minHeight={45} />
+        <StyledNode struct={struct} label={label} name={name} info={info} />
+      </div>
     </>
   );
 };

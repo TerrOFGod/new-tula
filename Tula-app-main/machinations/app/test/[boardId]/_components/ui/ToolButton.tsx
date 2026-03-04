@@ -4,6 +4,7 @@ import { LucideIcon } from "lucide-react";
 
 import { Hint } from "@/components/hint";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/utils/canvas";
 
 interface ToolButtonProps {
   label: string;
@@ -28,7 +29,13 @@ export const ToolButton = ({
         disabled={isDisabled}
         onClick={onClick}
         size="icon"
-        style={{ margin: "1px", background: background }}
+        className={cn(
+          "m-1 transition-colors",
+          isActive
+            ? "bg-blue-500 hover:bg-blue-600 text-white"
+            : `bg-${background}`
+        )}
+        style={{ background: !isActive ? background : undefined }}
       >
         <Icon />
       </Button>

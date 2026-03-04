@@ -11,20 +11,27 @@ import {
 } from "reactflow";
 import useStore from "@/app/store/store";
 import { StructType } from "@/app/types/structs";
-import { StyledNode } from "./styled-node";
+import { StyledNode } from "../styled-node";
+import { useNodeDetails } from "@/app/store/use-node-details";
 
 interface DataProps {
   data: {
     label: string;
     struct: StructType;
     name?: string;
+    delaySteps?: number;
   };
   selected: boolean;
+  id: string;
 }
 
-const GateNode = ({ data: { label, struct, name }, selected }: DataProps) => {
+const DelayNode = ({ id, data, selected }: DataProps) => {
+  const { struct, label, name, delaySteps } = data;
+  const info = delaySteps ? `δ=${delaySteps}` : '';
+
   const { isPlay, onStop, onReset, time } = useAnimateScheme();
   const { setNodeLabel, getEdgeValues } = useStore();
+  const { openDetails } = useNodeDetails();
   const nodeId = useNodeId();
   const edges = useEdges<any>();
   const nodes = useNodes<any>();
@@ -35,16 +42,12 @@ const GateNode = ({ data: { label, struct, name }, selected }: DataProps) => {
       setNodeLabel(nodeId!, 0);
     } else {
       setNodeLabel(nodeId!, 1);
-
-      let sourceEdge: Edge<any> = edges.find(
-        (edge) => edge?.target === nodeId
-      )!;
+      let sourceEdge: Edge<any> = edges.find((edge) => edge?.target === nodeId)!;
       // тут в sourceEdge.data хранится значение количество ресурсов
-      let targetEdge: Edge<any> = edges.find(
-        (edge) => edge?.source === nodeId
-      )!;
+      let targetEdge: Edge<any> = edges.find((edge) => edge?.source === nodeId)!;
 
       // тут в targetEdge.data хранится значение количества млсекунд * 1000 - то что задержка
+
       let targetNodeId: Node<any> = nodes.find(
         (node) => node.id === targetEdge?.target
       )!;
@@ -63,15 +66,17 @@ const GateNode = ({ data: { label, struct, name }, selected }: DataProps) => {
 
   return (
     <>
-      <NodeResizer
-        color="blue"
-        isVisible={selected}
-        minWidth={45}
-        minHeight={45}
-      />
-      <StyledNode struct={struct} label={label} name={name} />
+      <div onDoubleClick={() => openDetails(id, 'delay')}>
+        <NodeResizer
+          color="blue"
+          isVisible={selected}
+          minWidth={45}
+          minHeight={45}
+        />
+        <StyledNode struct={struct} label={label} name={name} info={info} />
+      </div>
     </>
   );
 };
 
-export default memo(GateNode);
+export default memo(DelayNode);

@@ -8,6 +8,7 @@ import {
   CheckCheck,
   LucideIcon,
   Minus,
+  Webhook
 } from "lucide-react";
 import "./nodeStyle.css";
 import { StructType } from "@/app/types/structs";
@@ -19,6 +20,7 @@ interface ITestNodeProps {
   struct: StructType;
   label: string;
   name?: string;
+  info?: string;
 }
 
 type StructStyles = {
@@ -38,6 +40,12 @@ const styleNode: StructStyles = {
   Pool: "poolNode",
   Random: "randomNode",
   Source: "sourceNode",
+  Entity: "entityNode",
+  State: "stateNode",
+  Event: "eventNode",
+  Rule: "ruleNode",
+  Operator: "operatorNode",
+  Trigger: "triggerNode"
 };
 
 const styleNodeIcon: any = {
@@ -48,9 +56,10 @@ const styleNodeIcon: any = {
   Gate: <ArrowLeftRight />,
   Random: <Dices />,
   End: <CheckCheck />,
+  Trigger: <Webhook />,
 };
 
-export const StyledNode = ({ struct, label, name }: ITestNodeProps) => {
+export const StyledNode = ({ struct, label, name, info }: ITestNodeProps) => {
   const { setNodeName } = useStore();
   const nodeId = useNodeId();
 
@@ -66,7 +75,8 @@ export const StyledNode = ({ struct, label, name }: ITestNodeProps) => {
         <Handle type={"target"} position={Position.Left} />
       )}
       <div className={styleNode[struct]}>
-        {struct in styleNodeIcon ? styleNodeIcon[struct] : label}
+        <div className="node-icon-label">{struct in styleNodeIcon ? styleNodeIcon[struct] : label}</div>
+        {info && ( <div className="node-info"> {info} </div> )}
         {/* {label} */}
       </div>
       {struct !== StructType.End && (

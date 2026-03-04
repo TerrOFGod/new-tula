@@ -1,111 +1,70 @@
-.delayNode{
-    border: 2px solid red;
+/* Common node styles */
+.triggerNode,
+.delayNode,
+.consumerNode,
+.converterNode,
+.endNode,
+.gateNode,
+.poolNode,
+.sourceNode,
+.randomNode {
     position: relative;
-    height: 50px;
-    width: 50px;
+    width: 100%;
+    height: 100%;
     overflow: hidden;
-    border-radius: 5px;
     display: flex;
+    flex-direction: column;   /* stack children vertically */
     background: white;
     justify-content: center;
     align-items: center;
     font-weight: bold;
+    padding: 4px;
+    box-sizing: border-box;
 }
 
-.consumerNode{
-    border: 2px solid blue;
-    position: relative;
-    height: 50px;
-    width: 50px;
-    overflow: hidden;
-    border-radius: 100%;
-    display: flex;
-    background: white;
-    justify-content: center;
-    align-items: center;
-    font-weight: bold;
+/* Enforce square/circle shape */
+.consumerNode,
+.converterNode,
+.gateNode,
+.poolNode,
+.sourceNode,
+.randomNode,
+.triggerNode {
+  aspect-ratio: 1 / 1;   /* circle nodes – also have border-radius 50% */
+  border-radius: 50%;
 }
 
-.converterNode{
-    border: 2px solid blue;
-    position: relative;
-    height: 50px;
-    width: 50px;
-    overflow: hidden;
-    border-radius: 100%;
-    display: flex;
-    background: white;
-    justify-content: center;
-    align-items: center;
-    font-weight: bold;
+.delayNode,
+.endNode {
+  aspect-ratio: 1 / 1;   /* square nodes – border-radius 5px */
+  border-radius: 5px;
 }
 
-.endNode{
-    border: 2px solid black;
-    position: relative;
-    height: 50px;
-    width: 50px;
-    overflow: hidden;
-    border-radius: 5px;
+/* Specific border colors */
+.delayNode { border: 2px solid red; }
+.consumerNode { border: 2px solid blue; }
+.converterNode { border: 2px solid blue; }
+.endNode { border: 2px solid black; }
+.gateNode { border: 2px solid blue; }
+.poolNode { border: 2px solid blue; }
+.sourceNode { border: 2px solid greenyellow; }
+.randomNode { border: 2px solid red; }
+.triggerNode { border: 2px solid #f97316; } /* orange for trigger */
+
+.node-icon-label {
     display: flex;
-    background: white;
-    justify-content: center;
     align-items: center;
-    font-weight: bold;
+    justify-content: center;
+    font-size: 14px;
 }
 
-.gateNode{
-    border: 2px solid blue;
-    position: relative;
-    height: 50px;
-    width: 50px;
-    overflow: hidden;
-    border-radius: 100%;
-    display: flex;
-    background: white;
-    justify-content: center;
-    align-items: center;
-    font-weight: bold;
-}
-
-.poolNode{
-    border: 2px solid blue;
-    position: relative;
-    height: 50px;
-    width: 50px;
-    overflow: hidden;
-    border-radius: 100%;
-    display: flex;
-    background: white;
-    justify-content: center;
-    align-items: center;
-    font-weight: bold;
-}
-
-.sourceNode{
-    border: 2px solid greenyellow;
-    position: relative;
-    height: 50px;
-    width: 50px;
-    overflow: hidden;
-    border-radius: 100%;
-    display: flex;
-    background: white;
-    justify-content: center;
-    align-items: center;
-    font-weight: bold;
-}
-
-.randomNode{
-    border: 2px solid red;
-    position: relative;
-    height: 50px;
-    width: 50px;
-    overflow: hidden;
-    border-radius: 5px;
-    display: flex;
-    background: white;
-    justify-content: center;
-    align-items: center;
-    font-weight: bold;
+.node-info {
+    font-size: 9px;
+    line-height: 1.2;
+    color: #333;
+    max-width: 100%;
+    word-break: break-word;
+    text-align: center;
+    margin-top: 2px;
+    white-space: pre-line;
 }

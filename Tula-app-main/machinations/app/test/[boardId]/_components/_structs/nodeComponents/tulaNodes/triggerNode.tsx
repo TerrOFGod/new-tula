@@ -11,7 +11,8 @@ import {
 } from "reactflow";
 import useStore from "@/app/store/store";
 import { StructType } from "@/app/types/structs";
-import { StyledNode } from "./styled-node";
+import { StyledNode } from "../styled-node";
+import { useNodeDetails } from "@/app/store/use-node-details";
 
 interface DataProps {
   id: string;
@@ -19,18 +20,19 @@ interface DataProps {
     label: string;
     struct: StructType;
     name?: string | undefined;
+    triggerEvent?: string;
   };
   selected: boolean;
 }
 
-const PoolNode = ({
-  data: { label, struct, name },
-  selected,
-  id,
-}: DataProps) => {
+const TriggerNode = ({ data, selected, id, }: DataProps) => {
+  const { struct, label, name, triggerEvent } = data;
+  const info = triggerEvent ? `event:${triggerEvent}` : '';
+
   const { isPlay, onStop, onReset, time, gamesCount, resetNodes } =
     useAnimateScheme();
 
+  const { openDetails } = useNodeDetails();
   const { setNodeLabel, getEdgeValues } = useStore();
   const nodeId = useNodeId();
   const edges = useEdges<any>();
@@ -52,16 +54,19 @@ const PoolNode = ({
 
   return (
     <>
-      <NodeResizer
-        color="blue"
-        isVisible={selected}
-        minWidth={45}
-        minHeight={45}
-      />
+      <div onDoubleClick={() => openDetails(id, 'trigger')}>
+        <NodeResizer
+          color="blue"
+          isVisible={selected}
+          minWidth={45}
+          minHeight={45}
+        />
 
-      <StyledNode struct={struct} label={label} name={name} />
+        <StyledNode struct={struct} label={label} name={name} info={info} />
+      </div>
+
     </>
   );
 };
 
-export default memo(PoolNode);
+export default memo(TriggerNode);

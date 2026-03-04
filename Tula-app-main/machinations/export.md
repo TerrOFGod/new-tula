@@ -76,26 +76,32 @@ app/
     [boardId]/
       _components/
         _structs/
+          edgeComponents/
+            conditional-edge.tsx
+            custom-edge.tsx
+            modifier-edge.tsx
+            probabilistic-edge.tsx
+            trigger-edge.tsx
           nodeComponents/
-            consumerNode.tsx
-            converterNode.tsx
-            delayNode.tsx
-            endNode.tsx
-            entityNode.tsx
-            eventNode.tsx
-            gateNode.tsx
+            specNodes/
+              entityNode.tsx
+              eventNode.tsx
+              operatorNode.tsx
+              ruleNode.tsx
+              stateNode.tsx
+            tulaNodes/
+              consumerNode.tsx
+              converterNode.tsx
+              delayNode.tsx
+              endNode.tsx
+              gateNode.tsx
+              poolNode.tsx
+              randomNode.tsx
+              sourceNode.tsx
+              triggerNode.tsx
             nodeStyle.css
-            operatorNode.tsx
-            poolNode.tsx
-            randomNode.tsx
-            ruleNode.tsx
-            sourceNode.tsx
-            stateNode.tsx
             styled-node.tsx
-          conditional-edge.tsx
-          custom-edge.tsx
           custom-node.tsx
-          probabilistic-edge.tsx
         BoardInfoModal/
           BoardInfoModal.module.scss
           BoardInfoModal.tsx
@@ -160,10 +166,17 @@ components/
     alert-dialog.tsx
     avatar.tsx
     button.tsx
+    card.tsx
     dialog.tsx
     dropdown-menu.tsx
     input.tsx
+    label.tsx
+    scroll-area.tsx
+    select.tsx
+    separator.tsx
     sonner.tsx
+    tabs.tsx
+    textarea.tsx
     tooltip.tsx
   actions.tsx
   confirm-modal.tsx
@@ -206,6 +219,7 @@ utils/
 .export-ignore
 .gitignore
 components.json
+export.md
 liveblocks.config.ts
 middleware.ts
 next.config.mjs
@@ -3649,7 +3663,7 @@ export type RFState = {
   currentVersion: number;
   updatedTime: number | null;
   savingStatus: BoardSavingStatus;
-  edgeType: 'custom' | 'probabilistic' | 'conditional';
+  edgeType: 'custom' | 'probabilistic' | 'conditional' | 'trigger' | 'modifier';
   nodes: Node[];
   edges: Edge[];
   previousState: PreviousState | null;
@@ -3667,7 +3681,7 @@ export type RFState = {
   updateNodeData: (nodeId: string, newData: any) => void;
   onEdgesChange: OnEdgesChange;
   getEdgeTargetNode: (id: string) => void;
-  setEdgeType: (type: 'custom' | 'probabilistic' | 'conditional') => void;
+  setEdgeType: (type: 'custom' | 'probabilistic' | 'conditional' | 'trigger' | 'modifier') => void;
   setEdgeData: (id: string, data: number) => void;
   setEdgeAnimated: (isPlay: boolean) => void;
   onConnect: (connection: any) => void;
@@ -3764,8 +3778,8 @@ const useStore = createWithEqualityFn<WithLiveblocks<RFState>>()(
           edges: applyEdgeChanges(changes, get().edges),
         });
       },
-      edgeType: 'custom' as 'custom' | 'probabilistic' | 'conditional',
-      setEdgeType: (type: 'custom' | 'probabilistic' | 'conditional') => set({ edgeType: type }),
+      edgeType: 'custom' as 'custom' | 'probabilistic' | 'conditional' | 'trigger' | 'modifier',
+      setEdgeType: (type) => set({ edgeType: type }),
       onConnect: (connection: Connection) => {
         const edgeType = get().edgeType;
         const baseEdge = {
@@ -3776,12 +3790,22 @@ const useStore = createWithEqualityFn<WithLiveblocks<RFState>>()(
           markerEnd: markerEnd,
         };
         let newEdge;
-        if (edgeType === 'probabilistic') {
-          newEdge = { ...baseEdge, data: { probability: 0.5 } };
-        } else if (edgeType === 'conditional') {
-          newEdge = { ...baseEdge, data: { condition: '' } };
-        } else {
-          newEdge = { ...baseEdge, data: 1 };
+
+        switch (edgeType) {
+          case 'probabilistic':
+            newEdge = { ...baseEdge, data: { probability: 0.5 } };
+            break;
+          case 'conditional':
+            newEdge = { ...baseEdge, data: { condition: '' } };
+            break;
+          case 'trigger':
+            newEdge = { ...baseEdge, data: { eventName: '' } };
+            break;
+          case 'modifier':
+            newEdge = { ...baseEdge, data: { expression: '' } };
+            break;
+          default: // custom
+            newEdge = { ...baseEdge, data: 1 };
         }
 
         set({
@@ -4348,1097 +4372,13 @@ export const useGenerate = create<IGenerateStore>((set) => ({
 ```
 
 
-## app\test\[boardId]\_components\_structs\nodeComponents\consumerNode.tsx
+## app\test\[boardId]\_components\_structs\edgeComponents\conditional-edge.tsx
 
 ```tsx
-"use client";
-import { useAnimateScheme } from "@/app/store/use-animate-scheme";
-import { memo, useEffect } from "react";
-import {
-  Edge,
-  Node,
-  NodeResizer,
-  useEdges,
-  useNodeId,
-  useNodes,
-} from "reactflow";
-import useStore from "@/app/store/store";
-import { StructType } from "@/app/types/structs";
-import { StyledNode } from "./styled-node";
-
-interface DataProps {
-  data: {
-    label: string;
-    struct: StructType;
-    name?: string;
-  };
-  selected: boolean;
-}
-
-const ConsumerNode = ({
-  data: { label, struct, name },
-  selected,
-}: DataProps) => {
-  const { isPlay, onStop, onReset, time } = useAnimateScheme();
-  const { setNodeLabel, getEdgeValues } = useStore();
-  const nodeId = useNodeId();
-  const edges = useEdges<any>();
-  const nodes = useNodes<any>();
-
-  useEffect(() => {
-    let intervalId = null;
-    if (nodeId === null) return;
-    if (!isPlay) {
-      setNodeLabel(nodeId, 0);
-    } else {
-      setNodeLabel(nodeId, 1);
-      let sourceEdge: Edge<Number> = edges.find(
-        (edge) => edge?.target === nodeId
-      )!;
-      // тут в sourceEdge.data хранится значение количество ресурсов
-      let targetEdge: Edge<Number> = edges.find(
-        (edge) => edge?.source === nodeId
-      )!;
-
-      // тут в targetEdge.data хранится значение количества млсекунд * 1000 - то что задержка
-
-      let targetNodeId: Node<any> = nodes.find(
-        (node) => node.id === targetEdge?.target
-      )!;
-      let initialData = +sourceEdge?.data! || 0;
-
-      intervalId = setInterval(() => {
-        // Увеличиваем значение sourceEdge.data каждую секунду на 1
-        initialData += +sourceEdge?.data!;
-
-        // Обновляем метку узла с новым значением sourceEdge.data
-        setNodeLabel(targetNodeId?.id, +initialData);
-      }, time * 1000); // Интервал в миллисекундах (1000 миллисекунд = 1 секунда)
-    }
-    return () => clearInterval(intervalId!);
-  }, [isPlay, onStop, onReset]);
-
-  return (
-    <>
-      <NodeResizer
-        color="blue"
-        isVisible={selected}
-        minWidth={45}
-        minHeight={45}
-      />
-      <StyledNode struct={struct} label={label} name={name} />
-    </>
-  );
-};
-
-export default memo(ConsumerNode);
-```
-
-
-## app\test\[boardId]\_components\_structs\nodeComponents\converterNode.tsx
-
-```tsx
-"use client";
-import { useAnimateScheme } from "@/app/store/use-animate-scheme";
-import { memo, useEffect } from "react";
-import { Edge, NodeResizer, useEdges, useNodeId, useNodes } from "reactflow";
-import useStore from "@/app/store/store";
-import { StructType } from "@/app/types/structs";
-import { StyledNode } from "./styled-node";
-
-interface DataProps {
-  data: {
-    label: string;
-    struct: StructType;
-    name?: string;
-  };
-  selected: boolean;
-}
-
-const ConverterNode = ({
-  data: { label, struct, name },
-  selected,
-}: DataProps) => {
-  const { isPlay, onStop, onReset, time } = useAnimateScheme();
-  const { setNodeLabel, getEdgeValues } = useStore();
-  const nodeId = useNodeId();
-  const edges = useEdges<any>();
-  const nodes = useNodes<any>();
-
-  useEffect(() => {
-    let intervalId = null;
-    if (isPlay) {
-
-
-      let newEdges: Edge[] = edges.filter((edge) => edge.target === nodeId)
-      let nodeIds: string[] = newEdges.map((edge) => edge.source);
-
-      if (nodeIds.length > 0) {
-        nodeIds.forEach(nodeId => {
-            let foundNode = nodes.find(node => node.id === nodeId);
-            let edge = edges.find(edge => edge.source === foundNode?.id)
-            if (foundNode) {
-                if (+foundNode.data?.label > edge?.data) {
-                    setNodeLabel(foundNode.id, foundNode.data?.label - edge?.data);
-                }
-            }
-        });
-    }
-
-      const sumOfData = newEdges.reduce((accumulator, currentEdge) => {
-        return accumulator + (+currentEdge.data || 0); 
-      }, 0);
-      intervalId = setInterval(() => {
-
-
-        setNodeLabel(nodeId!, (parseInt(label) + sumOfData));
-      }, time * 1000);
-    }
-
-    return () => clearInterval(intervalId!);
-
-  }, [isPlay, onStop, onReset, label]);
-
-  return (
-    <>
-      <NodeResizer
-        color="blue"
-        isVisible={selected}
-        minWidth={45}
-        minHeight={45}
-      />
-      <StyledNode struct={struct} label={label} name={name} />
-    </>
-  );
-};
-
-export default memo(ConverterNode);
-```
-
-
-## app\test\[boardId]\_components\_structs\nodeComponents\delayNode.tsx
-
-```tsx
-"use client";
-import { useAnimateScheme } from "@/app/store/use-animate-scheme";
-import { memo, useEffect } from "react";
-import {
-  Edge,
-  Node,
-  NodeResizer,
-  useEdges,
-  useNodeId,
-  useNodes,
-} from "reactflow";
-import useStore from "@/app/store/store";
-import { StructType } from "@/app/types/structs";
-import { StyledNode } from "./styled-node";
-
-interface DataProps {
-  data: {
-    label: string;
-    struct: StructType;
-    name?: string;
-  };
-  selected: boolean;
-}
-
-const DelayNode = ({ data: { label, struct, name }, selected }: DataProps) => {
-  const { isPlay, onStop, onReset, time } = useAnimateScheme();
-  const { setNodeLabel, getEdgeValues } = useStore();
-  const nodeId = useNodeId();
-  const edges = useEdges<any>();
-  const nodes = useNodes<any>();
-
-  useEffect(() => {
-    let intervalId = null;
-    if (!isPlay) {
-      setNodeLabel(nodeId!, 0);
-    } else {
-      setNodeLabel(nodeId!, 1);
-      let sourceEdge: Edge<any> = edges.find((edge) => edge?.target === nodeId)!;
-      // тут в sourceEdge.data хранится значение количество ресурсов
-      let targetEdge: Edge<any> = edges.find((edge) => edge?.source === nodeId)!;
-
-      // тут в targetEdge.data хранится значение количества млсекунд * 1000 - то что задержка
-
-      let targetNodeId: Node<any> = nodes.find(
-        (node) => node.id === targetEdge?.target
-      )!;
-      let initialData = +sourceEdge?.data || 0;
-
-      intervalId = setInterval(() => {
-        // Увеличиваем значение sourceEdge.data каждую секунду на 1
-        initialData += +sourceEdge?.data;
-
-        // Обновляем метку узла с новым значением sourceEdge.data
-        setNodeLabel(targetNodeId?.id, +initialData);
-      }, time * 1000); // Интервал в миллисекундах (1000 миллисекунд = 1 секунда)
-    }
-    return () => clearInterval(intervalId!);
-  }, [isPlay, onStop, onReset]);
-
-  return (
-    <>
-      <NodeResizer
-        color="blue"
-        isVisible={selected}
-        minWidth={45}
-        minHeight={45}
-      />
-      <StyledNode struct={struct} label={label} name={name} />
-    </>
-  );
-};
-
-export default memo(DelayNode);
-```
-
-
-## app\test\[boardId]\_components\_structs\nodeComponents\endNode.tsx
-
-```tsx
-"use client";
-import { useAnimateScheme } from "@/app/store/use-animate-scheme";
-import { memo, useEffect } from "react";
-import {
-  Edge,
-  Node,
-  NodeResizer,
-  useEdges,
-  useNodeId,
-  useNodes,
-} from "reactflow";
-import useStore from "@/app/store/store";
-import { StructType } from "@/app/types/structs";
-import { StyledNode } from "./styled-node";
-
-interface DataProps {
-  data: {
-    label: string;
-    struct: StructType;
-    name?: string;
-  };
-  selected: boolean;
-}
-
-const EndNode = ({ data: { label, struct, name }, selected }: DataProps) => {
-  const { isPlay, onStop, onReset, time } = useAnimateScheme();
-  const { setNodeLabel, getEdgeValues } = useStore();
-  const nodeId = useNodeId();
-  const edges = useEdges<any>();
-  const nodes = useNodes<any>();
-
-  useEffect(() => {
-    let intervalId = null;
-    if (!isPlay) {
-      setNodeLabel(nodeId!, 0);
-    } else {
-      setNodeLabel(nodeId!, 1);
-      let sourceEdge: Edge<any> = edges.find((edge) => edge?.target === nodeId)!;
-      // тут в sourceEdge.data хранится значение количество ресурсов
-      let targetEdge: Edge<any> = edges.find((edge) => edge?.source === nodeId)!;
-
-      // тут в targetEdge.data хранится значение количества млсекунд * 1000 - то что задержка
-
-      let targetNodeId: Node<any> = nodes.find(
-        (node) => node.id === targetEdge?.target
-      )!;
-      let initialData = +sourceEdge?.data || 0;
-
-      intervalId = setInterval(() => {
-        // Увеличиваем значение sourceEdge.data каждую секунду на 1
-        initialData += +sourceEdge?.data;
-
-        // Обновляем метку узла с новым значением sourceEdge.data
-        setNodeLabel(targetNodeId?.id, +initialData);
-      }, time * 1000); // Интервал в миллисекундах (1000 миллисекунд = 1 секунда)
-    }
-    return () => clearInterval(intervalId!);
-  }, [isPlay, onStop, onReset]);
-
-  return (
-    <>
-      <NodeResizer
-        color="blue"
-        isVisible={selected}
-        minWidth={45}
-        minHeight={45}
-      />
-      <StyledNode struct={struct} label={label} name={name} />
-    </>
-  );
-};
-
-export default memo(EndNode);
-```
-
-
-## app\test\[boardId]\_components\_structs\nodeComponents\entityNode.tsx
-
-```tsx
-"use client";
-import { memo, useState } from "react";
-import { Handle, Position, NodeResizer } from "reactflow";
-import { useNodeDetails } from "@/app/store/use-node-details";
-import { StructType } from "@/app/types/structs";
-
-interface EntityNodeProps {
-  data: {
-    label: string;
-    struct: StructType;
-    name?: string;
-    states?: string[];
-    events?: string[];
-  };
-  selected: boolean;
-  id: string;
-}
-
-const EntityNode = memo(({ data, selected, id }: EntityNodeProps) => {
-  const { name, label, states, events } = data;
-  const [isHovered, setIsHovered] = useState(false);
-  const { openDetails } = useNodeDetails();
-
-  return (
-    <div
-      onDoubleClick={() => openDetails(id, 'entity')}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-    >
-      <NodeResizer color="#4A90E2" isVisible={selected} minWidth={120} minHeight={80} />
-      <Handle type="target" position={Position.Top} />
-      <div className="entity-node" style={{
-        border: '2px solid #4A90E2',
-        borderRadius: '8px',
-        padding: '10px',
-        background: '#f0f8ff'
-      }}>
-        <div style={{ fontWeight: 'bold' }}>{name || label}</div>
-        {isHovered && (
-          <div style={{ fontSize: '0.8rem', color: '#666' }}>
-            {states?.length || 0} states, {events?.length || 0} events
-          </div>
-        )}
-      </div>
-      <Handle type="source" position={Position.Bottom} />
-    </div>
-  );
-});
-
-EntityNode.displayName = "EntityNode";
-export default EntityNode;
-```
-
-
-## app\test\[boardId]\_components\_structs\nodeComponents\eventNode.tsx
-
-```tsx
-"use client";
-import { memo } from "react";
-import { Handle, Position, NodeResizer } from "reactflow";
-import { StructType } from "@/app/types/structs";
-import { useNodeDetails } from "@/app/store/use-node-details";
-
-interface EventNodeProps {
-  data: {
-    label: string;
-    struct: StructType;
-    name?: string;
-    requires?: string;
-    effect?: string;
-    probability?: number;
-  };
-  selected: boolean;
-  id: string;
-}
-
-const EventNode = memo(({ data, selected, id }: EventNodeProps) => {
-  const { name, label, requires, effect, probability } = data;
-    const { openDetails } = useNodeDetails();
-  return (
-    <div onDoubleClick={() => openDetails(id, 'event')}>
-      <NodeResizer color="#4A90E2" isVisible={selected} minWidth={100} minHeight={60} />
-      <Handle type="target" position={Position.Top} />
-      <div style={{
-        border: '2px solid #4A90E2',
-        borderRadius: '8px',
-        padding: '8px',
-        background: '#ffe4e1'
-      }}>
-        <div>{name || label}</div>
-        {probability !== undefined && <div>P={probability}</div>}
-        {requires && <div style={{ fontSize: '0.7rem' }}>Requires: {requires}</div>}
-        {effect && <div style={{ fontSize: '0.7rem' }}>Effect: {effect}</div>}
-      </div>
-      <Handle type="source" position={Position.Bottom} />
-    </div>
-  );
-});
-
-EventNode.displayName = "EventNode";
-export default EventNode;
-```
-
-
-## app\test\[boardId]\_components\_structs\nodeComponents\gateNode.tsx
-
-```tsx
-"use client";
-import { useAnimateScheme } from "@/app/store/use-animate-scheme";
-import { memo, useEffect } from "react";
-import {
-  Edge,
-  Node,
-  NodeResizer,
-  useEdges,
-  useNodeId,
-  useNodes,
-} from "reactflow";
-import useStore from "@/app/store/store";
-import { StructType } from "@/app/types/structs";
-import { StyledNode } from "./styled-node";
-
-interface DataProps {
-  data: {
-    label: string;
-    struct: StructType;
-    name?: string;
-  };
-  selected: boolean;
-}
-
-const GateNode = ({ data: { label, struct, name }, selected }: DataProps) => {
-  const { isPlay, onStop, onReset, time } = useAnimateScheme();
-  const { setNodeLabel, getEdgeValues } = useStore();
-  const nodeId = useNodeId();
-  const edges = useEdges<any>();
-  const nodes = useNodes<any>();
-
-  useEffect(() => {
-    let intervalId = null;
-    if (!isPlay) {
-      setNodeLabel(nodeId!, 0);
-    } else {
-      setNodeLabel(nodeId!, 1);
-
-      let sourceEdge: Edge<any> = edges.find(
-        (edge) => edge?.target === nodeId
-      )!;
-      // тут в sourceEdge.data хранится значение количество ресурсов
-      let targetEdge: Edge<any> = edges.find(
-        (edge) => edge?.source === nodeId
-      )!;
-
-      // тут в targetEdge.data хранится значение количества млсекунд * 1000 - то что задержка
-      let targetNodeId: Node<any> = nodes.find(
-        (node) => node.id === targetEdge?.target
-      )!;
-      let initialData = +sourceEdge?.data || 0;
-
-      intervalId = setInterval(() => {
-        // Увеличиваем значение sourceEdge.data каждую секунду на 1
-        initialData += +sourceEdge?.data;
-
-        // Обновляем метку узла с новым значением sourceEdge.data
-        setNodeLabel(targetNodeId?.id, +initialData);
-      }, time * 1000); // Интервал в миллисекундах (1000 миллисекунд = 1 секунда)
-    }
-    return () => clearInterval(intervalId!);
-  }, [isPlay, onStop, onReset]);
-
-  return (
-    <>
-      <NodeResizer
-        color="blue"
-        isVisible={selected}
-        minWidth={45}
-        minHeight={45}
-      />
-      <StyledNode struct={struct} label={label} name={name} />
-    </>
-  );
-};
-
-export default memo(GateNode);
-```
-
-
-## app\test\[boardId]\_components\_structs\nodeComponents\nodeStyle.css
-
-```css
-.delayNode{
-    border: 2px solid red;
-    position: relative;
-    height: 50px;
-    width: 50px;
-    overflow: hidden;
-    border-radius: 5px;
-    display: flex;
-    background: white;
-    justify-content: center;
-    align-items: center;
-    font-weight: bold;
-}
-
-.consumerNode{
-    border: 2px solid blue;
-    position: relative;
-    height: 50px;
-    width: 50px;
-    overflow: hidden;
-    border-radius: 100%;
-    display: flex;
-    background: white;
-    justify-content: center;
-    align-items: center;
-    font-weight: bold;
-}
-
-.converterNode{
-    border: 2px solid blue;
-    position: relative;
-    height: 50px;
-    width: 50px;
-    overflow: hidden;
-    border-radius: 100%;
-    display: flex;
-    background: white;
-    justify-content: center;
-    align-items: center;
-    font-weight: bold;
-}
-
-.endNode{
-    border: 2px solid black;
-    position: relative;
-    height: 50px;
-    width: 50px;
-    overflow: hidden;
-    border-radius: 5px;
-    display: flex;
-    background: white;
-    justify-content: center;
-    align-items: center;
-    font-weight: bold;
-}
-
-.gateNode{
-    border: 2px solid blue;
-    position: relative;
-    height: 50px;
-    width: 50px;
-    overflow: hidden;
-    border-radius: 100%;
-    display: flex;
-    background: white;
-    justify-content: center;
-    align-items: center;
-    font-weight: bold;
-}
-
-.poolNode{
-    border: 2px solid blue;
-    position: relative;
-    height: 50px;
-    width: 50px;
-    overflow: hidden;
-    border-radius: 100%;
-    display: flex;
-    background: white;
-    justify-content: center;
-    align-items: center;
-    font-weight: bold;
-}
-
-.sourceNode{
-    border: 2px solid greenyellow;
-    position: relative;
-    height: 50px;
-    width: 50px;
-    overflow: hidden;
-    border-radius: 100%;
-    display: flex;
-    background: white;
-    justify-content: center;
-    align-items: center;
-    font-weight: bold;
-}
-
-.randomNode{
-    border: 2px solid red;
-    position: relative;
-    height: 50px;
-    width: 50px;
-    overflow: hidden;
-    border-radius: 5px;
-    display: flex;
-    background: white;
-    justify-content: center;
-    align-items: center;
-    font-weight: bold;
-}
-```
-
-
-## app\test\[boardId]\_components\_structs\nodeComponents\operatorNode.tsx
-
-```tsx
-"use client";
-import { memo } from "react";
-import { Handle, Position, NodeResizer } from "reactflow";
-import { StructType } from "@/app/types/structs";
-import { useNodeDetails } from "@/app/store/use-node-details";
-
-const operatorSymbols = {
-  X: '◯',
-  F: '◇',
-  G: '□',
-  U: 'U',
-};
-
-interface OperatorNodeProps {
-  data: {
-    label: string;
-    struct: StructType;
-    operator?: 'X' | 'F' | 'G' | 'U';
-  };
-  selected: boolean;
-  id: string;
-}
-
-const OperatorNode = memo(({ data, selected, id }: OperatorNodeProps) => {
-  const { operator = 'X' } = data;
-  const { openDetails } = useNodeDetails();
-  return (
-    <div onDoubleClick={() => openDetails(id, 'operator')}>
-      <NodeResizer color="#4A90E2" isVisible={selected} minWidth={40} minHeight={40} />
-      <Handle type="target" position={Position.Left} />
-      <div style={{
-        border: '2px solid #4A90E2',
-        borderRadius: '50%',
-        width: '40px',
-        height: '40px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        background: '#fff'
-      }}>
-        {operatorSymbols[operator]}
-      </div>
-      <Handle type="source" position={Position.Right} />
-    </div>
-  );
-});
-
-OperatorNode.displayName = "OperatorNode";
-export default OperatorNode;
-```
-
-
-## app\test\[boardId]\_components\_structs\nodeComponents\poolNode.tsx
-
-```tsx
-"use client";
-import { useAnimateScheme } from "@/app/store/use-animate-scheme";
-import { memo, useEffect } from "react";
-import {
-  Edge,
-  Node,
-  NodeResizer,
-  useEdges,
-  useNodeId,
-  useNodes,
-} from "reactflow";
-import useStore from "@/app/store/store";
-import { StructType } from "@/app/types/structs";
-import { StyledNode } from "./styled-node";
-
-interface DataProps {
-  id: string;
-  data: {
-    label: string;
-    struct: StructType;
-    name?: string | undefined;
-  };
-  selected: boolean;
-}
-
-const PoolNode = ({
-  data: { label, struct, name },
-  selected,
-  id,
-}: DataProps) => {
-  const { isPlay, onStop, onReset, time, gamesCount, resetNodes } =
-    useAnimateScheme();
-
-  const { setNodeLabel, getEdgeValues } = useStore();
-  const nodeId = useNodeId();
-  const edges = useEdges<any>();
-  const nodes = useNodes<any>();
-
-  useEffect(() => {
-    let intervalId = null;
-    if (isPlay) {
-      let newEdges = edges.filter((edge) => edge.target === nodeId);
-      const sumOfData = newEdges.reduce((accumulator, currentEdge) => {
-        return accumulator + (+currentEdge.data || 0);
-      }, 0);
-      intervalId = setInterval(() => {
-        setNodeLabel(nodeId!, parseInt(label) + sumOfData);
-      }, time * 1000);
-    }
-    return () => clearInterval(intervalId!);
-  }, [isPlay, onStop, onReset, label, gamesCount]);
-
-  return (
-    <>
-      <NodeResizer
-        color="blue"
-        isVisible={selected}
-        minWidth={45}
-        minHeight={45}
-      />
-
-      <StyledNode struct={struct} label={label} name={name} />
-    </>
-  );
-};
-
-export default memo(PoolNode);
-```
-
-
-## app\test\[boardId]\_components\_structs\nodeComponents\randomNode.tsx
-
-```tsx
-"use client";
-import { useAnimateScheme } from "@/app/store/use-animate-scheme";
-import { memo, useEffect } from "react";
-import {
-  Edge,
-  Node,
-  NodeResizer,
-  useEdges,
-  useNodeId,
-  useNodes,
-} from "reactflow";
-import useStore from "@/app/store/store";
-import { StructType } from "@/app/types/structs";
-import { StyledNode } from "./styled-node";
-
-interface DataProps {
-  data: {
-    label: string;
-    struct: StructType;
-    name?: string;
-  };
-  selected: boolean;
-}
-
-const RandomNode = ({ data: { label, struct, name }, selected }: DataProps) => {
-  const { isPlay, onStop, onReset, time } = useAnimateScheme();
-  const { setNodeLabel, getEdgeValues } = useStore();
-  const nodeId = useNodeId();
-  const edges = useEdges<any>();
-  const nodes = useNodes<any>();
-
-
-
-  useEffect(() => {
-    let intervalId = null;
-    if (isPlay) {
-      const initialValue = label || null
-      let newEdges: Edge[] = edges.filter((edge) => edge.source === nodeId)
-      let nodeIds: string[] = newEdges.map(edge => edge.target)      //идишники нод
-      
-    //   intervalId = setInterval(() => {
-
-    //     setNodeLabel(nodeId, (parseInt(label) + sumOfData).toString());
-    //   }, time * 1000);
-
-    
-    }
-    return () => clearInterval(intervalId!);
-  }, [isPlay, onStop, onReset, label]);
-
-  return (
-    <>
-      <NodeResizer
-        color="blue"
-        isVisible={selected}
-        minWidth={45}
-        minHeight={45}
-      />
-      <StyledNode struct={struct} label={label} name={name} />
-    </>
-  );
-};
-
-export default memo(RandomNode);
-```
-
-
-## app\test\[boardId]\_components\_structs\nodeComponents\ruleNode.tsx
-
-```tsx
-"use client";
-import { memo } from "react";
-import { Handle, Position, NodeResizer } from "reactflow";
-import { StructType } from "@/app/types/structs";
-import { useNodeDetails } from "@/app/store/use-node-details";
-
-interface RuleNodeProps {
-  data: {
-    label: string;
-    struct: StructType;
-    name?: string;
-    when?: string;
-    effect?: string;
-  };
-  selected: boolean;
-  id: string;
-}
-
-const RuleNode = memo(({ data, selected, id }: RuleNodeProps) => {
-  const { name, label, when, effect } = data;
-  const { openDetails } = useNodeDetails();
-  return (
-    <div onDoubleClick={() => openDetails(id, 'rule')}>
-      <NodeResizer color="#4A90E2" isVisible={selected} minWidth={100} minHeight={60} />
-      <Handle type="target" position={Position.Left} />
-      <div style={{
-        border: '2px solid #4A90E2',
-        borderRadius: '8px',
-        padding: '8px',
-        background: '#e6ffe6'
-      }}>
-        <div>{name || label}</div>
-        {when && <div style={{ fontSize: '0.7rem' }}>When: {when}</div>}
-        {effect && <div style={{ fontSize: '0.7rem' }}>Effect: {effect}</div>}
-      </div>
-      <Handle type="source" position={Position.Right} />
-    </div>
-  );
-});
-
-RuleNode.displayName = "RuleNode";
-export default RuleNode;
-```
-
-
-## app\test\[boardId]\_components\_structs\nodeComponents\sourceNode.tsx
-
-```tsx
-"use client";
-import { useAnimateScheme } from "@/app/store/use-animate-scheme";
-import { memo, useEffect } from "react";
-import { Edge, NodeResizer, useEdges, useNodeId, useNodes } from "reactflow";
-import useStore from "@/app/store/store";
-import { StructType } from "@/app/types/structs";
-import { StyledNode } from "./styled-node";
-
-interface DataProps {
-  data: {
-    label: string;
-    struct: StructType;
-    name?: string;
-  };
-  selected: boolean;
-}
-
-const SourceNode = ({ data: { label, struct, name }, selected }: DataProps) => {
-  const { isPlay, onStop, onReset, time } = useAnimateScheme();
-  const { setNodeLabel, getEdgeValues } = useStore();
-  const nodeId = useNodeId();
-  const edges = useEdges();
-  const nodes = useNodes();
-
-  useEffect(() => {
-    let intervalIds: NodeJS.Timeout[] = [];
-
-    if (isPlay && nodeId) {
-      let targetEdges: Edge[] = edges.filter((edge) => edge?.source === nodeId);
-      targetEdges.forEach((edge) => {
-        const targetNode = nodes.find((node) => node.id === edge.target);
-        if (!targetNode) return;
-
-        let initialData = 0;
-
-        const intervalId = setInterval(() => {
-          initialData += +edge.data;
-          setNodeLabel(targetNode?.id!, +initialData);
-        }, time * 1000);
-
-        intervalIds.push(intervalId);
-      });
-    }
-    return () => {
-      intervalIds.forEach((intervalId) => clearInterval(intervalId));
-    };
-  }, [isPlay, onStop, onReset, edges, nodeId, nodes, time, setNodeLabel]);
-
-  return (
-    <>
-      <NodeResizer
-        color="blue"
-        isVisible={selected}
-        minWidth={45}
-        minHeight={45}
-      />
-      <StyledNode struct={struct} label={label} name={name} />
-    </>
-  );
-};
-
-export default memo(SourceNode);
-```
-
-
-## app\test\[boardId]\_components\_structs\nodeComponents\stateNode.tsx
-
-```tsx
-"use client";
-import { memo } from "react";
-import { Handle, Position, NodeResizer } from "reactflow";
-import { StructType } from "@/app/types/structs";
-import { useNodeDetails } from "@/app/store/use-node-details";
-
-interface StateNodeProps {
-  data: {
-    label: string;
-    struct: StructType;
-    name?: string;
-    valueType?: 'int' | 'enum' | 'list';
-    range?: [number, number];
-    enumValues?: string[];
-  };
-  selected: boolean;
-  id: string;
-}
-
-const StateNode = memo(({ data, selected, id }: StateNodeProps) => {
-  const { name, label, valueType, range, enumValues } = data;
-    const { openDetails } = useNodeDetails();
-  return (
-    <div onDoubleClick={() => openDetails(id, 'state')}>
-      <NodeResizer color="#4A90E2" isVisible={selected} minWidth={80} minHeight={50} />
-      <Handle type="target" position={Position.Left} />
-      <div style={{
-        border: '2px solid #4A90E2',
-        borderRadius: '4px',
-        padding: '5px',
-        background: '#fff'
-      }}>
-        <div>{name || label}</div>
-        {valueType === 'int' && range && <div>{range[0]}-{range[1]}</div>}
-        {valueType === 'enum' && enumValues && <div>{enumValues.join(', ')}</div>}
-      </div>
-      <Handle type="source" position={Position.Right} />
-    </div>
-  );
-});
-
-StateNode.displayName = "StateNode";
-export default StateNode;
-```
-
-
-## app\test\[boardId]\_components\_structs\nodeComponents\styled-node.tsx
-
-```tsx
-"use client";
-import {
-  ArrowLeftRight,
-  Recycle,
-  Dices,
-  Hourglass,
-  Play,
-  CheckCheck,
-  LucideIcon,
-  Minus,
-} from "lucide-react";
-import "./nodeStyle.css";
-import { StructType } from "@/app/types/structs";
-import { Handle, Position, useNodeId } from "reactflow";
-import { useState } from "react";
-import useStore from "@/app/store/store";
-
-interface ITestNodeProps {
-  struct: StructType;
-  label: string;
-  name?: string;
-}
-
-type StructStyles = {
-  [key in StructType]: string;
-};
-
-interface StructIcons {
-  [key: string]: LucideIcon;
-}
-
-const styleNode: StructStyles = {
-  Consumer: "consumerNode",
-  Converter: "converterNode",
-  Delay: "delayNode",
-  End: "endNode",
-  Gate: "gateNode",
-  Pool: "poolNode",
-  Random: "randomNode",
-  Source: "sourceNode",
-};
-
-const styleNodeIcon: any = {
-  Source: <Play />,
-  Converter: <Recycle />,
-  Consumer: <Minus />,
-  Delay: <Hourglass />,
-  Gate: <ArrowLeftRight />,
-  Random: <Dices />,
-  End: <CheckCheck />,
-};
-
-export const StyledNode = ({ struct, label, name }: ITestNodeProps) => {
-  const { setNodeName } = useStore();
-  const nodeId = useNodeId();
-
-  const [value, setValue] = useState(name);
-  const onChange = (event: any) => {
-    setValue(event.target.value);
-    setNodeName(nodeId!, event.target.value);
-  };
-
-  return (
-    <div>
-      {struct !== StructType.Source && (
-        <Handle type={"target"} position={Position.Left} />
-      )}
-      <div className={styleNode[struct]}>
-        {struct in styleNodeIcon ? styleNodeIcon[struct] : label}
-        {/* {label} */}
-      </div>
-      {struct !== StructType.End && (
-        <Handle type="source" position={Position.Right} />
-      )}
-      <div className="h-full w-full flex justify-center">
-        <input
-          className="bg-transparent w-[50px] border-none text-xs font-bold text-center"
-          value={value}
-          onChange={onChange}
-        />
-      </div>
-    </div>
-  );
-};
-```
-
-
-## app\test\[boardId]\_components\_structs\conditional-edge.tsx
-
-```tsx
+import { useChangeEdgeType } from "@/app/store/use-custom-edge";
+import path from "path";
 import React, { useState } from "react";
-import { EdgeProps, getBezierPath, EdgeLabelRenderer } from "reactflow";
+import { EdgeProps, getBezierPath, EdgeLabelRenderer, getStraightPath, BaseEdge, BezierEdge, StepEdge } from "reactflow";
 
 export default function ConditionalEdge(props: EdgeProps) {
   const {
@@ -5449,9 +4389,17 @@ export default function ConditionalEdge(props: EdgeProps) {
     sourcePosition,
     targetPosition,
     data = {},
+    style,
     id,
   } = props;
   const [condition, setCondition] = useState(data.condition || "");
+
+  const {
+    error,
+    setError,
+    currentEdgesType: currentType,
+  } = useChangeEdgeType();
+
   const [edgePath, labelX, labelY] = getBezierPath({
     sourceX,
     sourceY,
@@ -5461,6 +4409,14 @@ export default function ConditionalEdge(props: EdgeProps) {
     targetPosition,
   });
 
+  const [basePath] = getStraightPath({
+    sourceX,
+    sourceY,
+    targetX,
+    targetY,
+  });
+
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setCondition(e.target.value);
     // обновить данные ребра
@@ -5468,12 +4424,9 @@ export default function ConditionalEdge(props: EdgeProps) {
 
   return (
     <>
-      <path
-        id={id}
-        style={{ stroke: '#4A90E2', strokeWidth: 2, strokeDasharray: '5,5' }}
-        d={edgePath}
-        markerEnd={props.markerEnd}
-      />
+      {currentType === "SmoothStep" && <StepEdge {...props}  style={{ ...style, stroke: '#4A90E2', strokeWidth: 2, strokeDasharray: '5,5' }}/>}
+      {currentType === "Default" && <BaseEdge path={basePath} {...props} style={{ ...style, stroke: '#4A90E2', strokeWidth: 2, strokeDasharray: '5,5' }}/>}
+      {currentType == "Bezier" && <BezierEdge {...props} style={{ ...style, stroke: '#4A90E2', strokeWidth: 2, strokeDasharray: '5,5' }}/>}
       <EdgeLabelRenderer>
         <div
           style={{
@@ -5482,7 +4435,8 @@ export default function ConditionalEdge(props: EdgeProps) {
             background: '#fff',
             padding: '2px 4px',
             borderRadius: '4px',
-            border: '1px solid #ccc',
+            border: '1px solid #4A90E2',
+            fontSize: 12,
             pointerEvents: 'all',
           }}
           className="nodrag nopan"
@@ -5492,7 +4446,7 @@ export default function ConditionalEdge(props: EdgeProps) {
             placeholder="condition"
             value={condition}
             onChange={handleChange}
-            style={{ width: '100px' }}
+            style={{ width: '80px', border: "none", outline: "none"  }}
           />
         </div>
       </EdgeLabelRenderer>
@@ -5502,7 +4456,7 @@ export default function ConditionalEdge(props: EdgeProps) {
 ```
 
 
-## app\test\[boardId]\_components\_structs\custom-edge.tsx
+## app\test\[boardId]\_components\_structs\edgeComponents\custom-edge.tsx
 
 ```tsx
 import { useChangeEdgeType } from "@/app/store/use-custom-edge";
@@ -5619,6 +4573,1490 @@ export default function CustomEdge(props: EdgeProps) {
 ```
 
 
+## app\test\[boardId]\_components\_structs\edgeComponents\modifier-edge.tsx
+
+```tsx
+// app/test/[boardId]/_components/_structs/modifier-edge.tsx
+import { useChangeEdgeType } from "@/app/store/use-custom-edge";
+import React, { useState } from "react";
+import { EdgeProps, getBezierPath, EdgeLabelRenderer, BaseEdge, getStraightPath, BezierEdge, StepEdge } from "reactflow";
+
+export default function ModifierEdge(props: EdgeProps) {
+    const {
+        sourceX,
+        sourceY,
+        targetX,
+        targetY,
+        sourcePosition,
+        targetPosition,
+        data = {},
+        id,
+        style,
+    } = props;
+
+    const {
+        error,
+        setError,
+        currentEdgesType: currentType,
+    } = useChangeEdgeType();
+
+    const [expression, setExpression] = useState(data.expression || "");
+
+    const [edgePath, labelX, labelY] = getBezierPath({
+        sourceX,
+        sourceY,
+        sourcePosition,
+        targetX,
+        targetY,
+        targetPosition,
+    });
+
+    const [basePath] = getStraightPath({
+        sourceX,
+        sourceY,
+        targetX,
+        targetY,
+    });
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setExpression(e.target.value);
+    };
+
+    return (
+        <>
+            {currentType === "SmoothStep" && <StepEdge {...props}  style={{ ...style, stroke: '#a855f7', strokeWidth: 2, strokeDasharray: '5,5' }}/>}
+            {currentType === "Default" && <BaseEdge path={basePath} {...props}  style={{ ...style, stroke: '#a855f7', strokeWidth: 2, strokeDasharray: '5,5' }}/>}
+            {currentType == "Bezier" && <BezierEdge {...props}  style={{ ...style, stroke: '#a855f7', strokeWidth: 2, strokeDasharray: '5,5' }}/>}
+
+            <EdgeLabelRenderer>
+                <div
+                    style={{
+                        position: "absolute",
+                        transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
+                        background: "#fff",
+                        padding: "2px 4px",
+                        borderRadius: "4px",
+                        border: "1px solid #a855f7",
+                        fontSize: 12,
+                        pointerEvents: "all",
+                    }}
+                    className="nodrag nopan"
+                >
+                    <input
+                        type="text"
+                        placeholder="expression"
+                        value={expression}
+                        onChange={handleChange}
+                        style={{ width: "100px", border: "none", outline: "none" }}
+                    />
+                </div>
+            </EdgeLabelRenderer>
+        </>
+    );
+}
+```
+
+
+## app\test\[boardId]\_components\_structs\edgeComponents\probabilistic-edge.tsx
+
+```tsx
+import { useChangeEdgeType } from "@/app/store/use-custom-edge";
+import React, { useState } from "react";
+import { EdgeProps, getBezierPath, EdgeLabelRenderer, getStraightPath, BaseEdge, BezierEdge, StepEdge } from "reactflow";
+
+export default function ProbabilisticEdge(props: EdgeProps) {
+  const {
+    sourceX,
+    sourceY,
+    targetX,
+    targetY,
+    sourcePosition,
+    targetPosition,
+    data = {},
+    style,
+    id,
+  } = props;
+
+  const {
+    error,
+    setError,
+    currentEdgesType: currentType,
+  } = useChangeEdgeType();
+
+  const [probability, setProbability] = useState(data.probability || 0.5);
+
+  const [edgePath, labelX, labelY] = getBezierPath({
+    sourceX,
+    sourceY,
+    sourcePosition,
+    targetX,
+    targetY,
+    targetPosition,
+  });
+
+  const [basePath] = getStraightPath({
+    sourceX,
+    sourceY,
+    targetX,
+    targetY,
+  });
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = parseFloat(e.target.value);
+    setProbability(val);
+    // Здесь можно вызвать функцию обновления данных ребра (например, через стор)
+    // onEdgeDataChange? id, { probability: val }
+  };
+
+  return (
+    <>
+      {currentType === "SmoothStep" && <StepEdge {...props}  style={{ ...style, stroke: '#ff6b6b', strokeWidth: 2, strokeDasharray: '5,5' }}/>}
+      {currentType === "Default" && <BaseEdge path={basePath} {...props}  style={{ ...style, stroke: '#ff6b6b', strokeWidth: 2, strokeDasharray: '5,5' }}/>}
+      {currentType == "Bezier" && <BezierEdge {...props}  style={{ ...style, stroke: '#ff6b6b', strokeWidth: 2, strokeDasharray: '5,5' }}/>}
+
+      <EdgeLabelRenderer>
+        <div
+          style={{
+            position: 'absolute',
+            transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
+            background: '#fff',
+            padding: '2px 4px',
+            borderRadius: '4px',
+            border: '1px solid #ff6b6b',
+            fontSize: 12,
+            pointerEvents: 'all',
+          }}
+          className="nodrag nopan"
+        >
+          <input
+            type="number"
+            min="0"
+            max="1"
+            step="0.1"
+            value={probability}
+            onChange={handleChange}
+            style={{ width: '50px', border: "none", outline: "none" }}
+          />
+        </div>
+      </EdgeLabelRenderer>
+    </>
+  );
+}
+```
+
+
+## app\test\[boardId]\_components\_structs\edgeComponents\trigger-edge.tsx
+
+```tsx
+// app/test/[boardId]/_components/_structs/trigger-edge.tsx
+import { useChangeEdgeType } from "@/app/store/use-custom-edge";
+import React, { useState } from "react";
+import { EdgeProps, getBezierPath, EdgeLabelRenderer, BaseEdge, getStraightPath, BezierEdge, StepEdge } from "reactflow";
+
+export default function TriggerEdge(props: EdgeProps) {
+    const {
+        sourceX,
+        sourceY,
+        targetX,
+        targetY,
+        sourcePosition,
+        targetPosition,
+        data = {},
+        id,
+        style,
+    } = props;
+
+    const {
+        error,
+        setError,
+        currentEdgesType: currentType,
+    } = useChangeEdgeType();
+
+    const [eventName, setEventName] = useState(data.eventName || "");
+
+    const [edgePath, labelX, labelY] = getBezierPath({
+        sourceX,
+        sourceY,
+        sourcePosition,
+        targetX,
+        targetY,
+        targetPosition,
+    });
+
+    const [basePath] = getStraightPath({
+        sourceX,
+        sourceY,
+        targetX,
+        targetY,
+    });
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setEventName(e.target.value);
+        // Здесь можно обновить данные ребра через стор, но пока оставим
+    };
+
+    return (
+        <>
+            {currentType === "SmoothStep" && <StepEdge {...props}  style={{ ...style, stroke: '#f97316', strokeWidth: 2, strokeDasharray: '5,5' }}/>}
+            {currentType === "Default" && <BaseEdge path={basePath} {...props}  style={{ ...style, stroke: '#f97316', strokeWidth: 2, strokeDasharray: '5,5' }}/>}
+            {currentType == "Bezier" && <BezierEdge {...props}  style={{ ...style, stroke: '#f97316', strokeWidth: 2, strokeDasharray: '5,5' }}/>}
+
+            <EdgeLabelRenderer>
+                <div
+                    style={{
+                        position: "absolute",
+                        transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
+                        background: "#fff",
+                        padding: "2px 4px",
+                        borderRadius: "4px",
+                        border: "1px solid #f97316",
+                        fontSize: 12,
+                        pointerEvents: "all",
+                    }}
+                    className="nodrag nopan"
+                >
+                    <input
+                        type="text"
+                        placeholder="event"
+                        value={eventName}
+                        onChange={handleChange}
+                        style={{ width: "80px", border: "none", outline: "none" }}
+                    />
+                </div>
+            </EdgeLabelRenderer>
+        </>
+    );
+}
+```
+
+
+## app\test\[boardId]\_components\_structs\nodeComponents\specNodes\entityNode.tsx
+
+```tsx
+"use client";
+import { memo, useState } from "react";
+import { Handle, Position, NodeResizer } from "reactflow";
+import { useNodeDetails } from "@/app/store/use-node-details";
+import { StructType } from "@/app/types/structs";
+
+interface EntityNodeProps {
+  data: {
+    label: string;
+    struct: StructType;
+    name?: string;
+    states?: string[];
+    events?: string[];
+  };
+  selected: boolean;
+  id: string;
+}
+
+const EntityNode = memo(({ data, selected, id }: EntityNodeProps) => {
+  const { name, label, states, events } = data;
+  const [isHovered, setIsHovered] = useState(false);
+  const { openDetails } = useNodeDetails();
+
+  return (
+    <div
+      onDoubleClick={() => openDetails(id, 'entity')}
+      onClick={() => setIsHovered(!isHovered)}
+    >
+      <NodeResizer color="#4A90E2" isVisible={selected} minWidth={120} minHeight={80} />
+      <Handle type="target" position={Position.Top} />
+      <div className="entity-node" style={{
+        border: '2px solid #4A90E2',
+        borderRadius: '8px',
+        padding: '10px',
+        background: '#f0f8ff'
+      }}>
+        <div style={{ fontWeight: 'bold' }}>{name || label}</div>
+        {isHovered && (
+          <div style={{ fontSize: '0.8rem', color: '#666' }}>
+            {states?.length || 0} states, {events?.length || 0} events
+          </div>
+        )}
+      </div>
+      <Handle type="source" position={Position.Bottom} />
+    </div>
+  );
+});
+
+EntityNode.displayName = "EntityNode";
+export default EntityNode;
+```
+
+
+## app\test\[boardId]\_components\_structs\nodeComponents\specNodes\eventNode.tsx
+
+```tsx
+"use client";
+import { memo } from "react";
+import { Handle, Position, NodeResizer } from "reactflow";
+import { StructType } from "@/app/types/structs";
+import { useNodeDetails } from "@/app/store/use-node-details";
+
+interface EventNodeProps {
+  data: {
+    label: string;
+    struct: StructType;
+    name?: string;
+    requires?: string;
+    effect?: string;
+    probability?: number;
+  };
+  selected: boolean;
+  id: string;
+}
+
+const EventNode = memo(({ data, selected, id }: EventNodeProps) => {
+  const { name, label, requires, effect, probability } = data;
+    const { openDetails } = useNodeDetails();
+  return (
+    <div onDoubleClick={() => openDetails(id, 'event')}>
+      <NodeResizer color="#4A90E2" isVisible={selected} minWidth={100} minHeight={60} />
+      <Handle type="target" position={Position.Top} />
+      <div style={{
+        border: '2px solid #4A90E2',
+        borderRadius: '8px',
+        padding: '8px',
+        background: '#ffe4e1'
+      }}>
+        <div>{name || label}</div>
+        {probability !== undefined && <div>P={probability}</div>}
+        {requires && <div style={{ fontSize: '0.7rem' }}>Requires: {requires}</div>}
+        {effect && <div style={{ fontSize: '0.7rem' }}>Effect: {effect}</div>}
+      </div>
+      <Handle type="source" position={Position.Bottom} />
+    </div>
+  );
+});
+
+EventNode.displayName = "EventNode";
+export default EventNode;
+```
+
+
+## app\test\[boardId]\_components\_structs\nodeComponents\specNodes\operatorNode.tsx
+
+```tsx
+"use client";
+import { memo } from "react";
+import { Handle, Position, NodeResizer } from "reactflow";
+import { StructType } from "@/app/types/structs";
+import { useNodeDetails } from "@/app/store/use-node-details";
+
+const operatorSymbols = {
+  X: '◯',
+  F: '◇',
+  G: '□',
+  U: 'U',
+};
+
+interface OperatorNodeProps {
+  data: {
+    label: string;
+    struct: StructType;
+    operator?: 'X' | 'F' | 'G' | 'U';
+  };
+  selected: boolean;
+  id: string;
+}
+
+const OperatorNode = memo(({ data, selected, id }: OperatorNodeProps) => {
+  const { operator = 'X' } = data;
+  const { openDetails } = useNodeDetails();
+  return (
+    <div onDoubleClick={() => openDetails(id, 'operator')}>
+      <NodeResizer color="#4A90E2" isVisible={selected} minWidth={40} minHeight={40} />
+      <Handle type="target" position={Position.Left} />
+      <div style={{
+        border: '2px solid #4A90E2',
+        borderRadius: '50%',
+        width: '40px',
+        height: '40px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: '#fff'
+      }}>
+        {operatorSymbols[operator]}
+      </div>
+      <Handle type="source" position={Position.Right} />
+    </div>
+  );
+});
+
+OperatorNode.displayName = "OperatorNode";
+export default OperatorNode;
+```
+
+
+## app\test\[boardId]\_components\_structs\nodeComponents\specNodes\ruleNode.tsx
+
+```tsx
+"use client";
+import { memo } from "react";
+import { Handle, Position, NodeResizer } from "reactflow";
+import { StructType } from "@/app/types/structs";
+import { useNodeDetails } from "@/app/store/use-node-details";
+
+interface RuleNodeProps {
+  data: {
+    label: string;
+    struct: StructType;
+    name?: string;
+    when?: string;
+    effect?: string;
+  };
+  selected: boolean;
+  id: string;
+}
+
+const RuleNode = memo(({ data, selected, id }: RuleNodeProps) => {
+  const { name, label, when, effect } = data;
+  const { openDetails } = useNodeDetails();
+  return (
+    <div onDoubleClick={() => openDetails(id, 'rule')}>
+      <NodeResizer color="#4A90E2" isVisible={selected} minWidth={100} minHeight={60} />
+      <Handle type="target" position={Position.Left} />
+      <div style={{
+        border: '2px solid #4A90E2',
+        borderRadius: '8px',
+        padding: '8px',
+        background: '#e6ffe6'
+      }}>
+        <div>{name || label}</div>
+        {when && <div style={{ fontSize: '0.7rem' }}>When: {when}</div>}
+        {effect && <div style={{ fontSize: '0.7rem' }}>Effect: {effect}</div>}
+      </div>
+      <Handle type="source" position={Position.Right} />
+    </div>
+  );
+});
+
+RuleNode.displayName = "RuleNode";
+export default RuleNode;
+```
+
+
+## app\test\[boardId]\_components\_structs\nodeComponents\specNodes\stateNode.tsx
+
+```tsx
+"use client";
+import { memo } from "react";
+import { Handle, Position, NodeResizer } from "reactflow";
+import { StructType } from "@/app/types/structs";
+import { useNodeDetails } from "@/app/store/use-node-details";
+
+interface StateNodeProps {
+  data: {
+    label: string;
+    struct: StructType;
+    name?: string;
+    valueType?: 'int' | 'enum' | 'list';
+    range?: [number, number];
+    enumValues?: string[];
+  };
+  selected: boolean;
+  id: string;
+}
+
+const StateNode = memo(({ data, selected, id }: StateNodeProps) => {
+  const { name, label, valueType, range, enumValues } = data;
+    const { openDetails } = useNodeDetails();
+  return (
+    <div onDoubleClick={() => openDetails(id, 'state')}>
+      <NodeResizer color="#4A90E2" isVisible={selected} minWidth={80} minHeight={50} />
+      <Handle type="target" position={Position.Left} />
+      <div style={{
+        border: '2px solid #4A90E2',
+        borderRadius: '4px',
+        padding: '5px',
+        background: '#fff'
+      }}>
+        <div>{name || label}</div>
+        {valueType === 'int' && range && <div>{range[0]}-{range[1]}</div>}
+        {valueType === 'enum' && enumValues && <div>{enumValues.join(', ')}</div>}
+      </div>
+      <Handle type="source" position={Position.Right} />
+    </div>
+  );
+});
+
+StateNode.displayName = "StateNode";
+export default StateNode;
+```
+
+
+## app\test\[boardId]\_components\_structs\nodeComponents\tulaNodes\consumerNode.tsx
+
+```tsx
+"use client";
+import { useAnimateScheme } from "@/app/store/use-animate-scheme";
+import { memo, useEffect } from "react";
+import {
+  Edge,
+  Node,
+  NodeResizer,
+  useEdges,
+  useNodeId,
+  useNodes,
+} from "reactflow";
+import useStore from "@/app/store/store";
+import { StructType } from "@/app/types/structs";
+import { StyledNode } from "../styled-node";
+import { useNodeDetails } from "@/app/store/use-node-details";
+
+interface DataProps {
+  data: {
+    label: string;
+    struct: StructType;
+    name?: string;
+  };
+  selected: boolean;
+  id: string;
+}
+
+const ConsumerNode = ({
+  id,
+  data: { label, struct, name, },
+  selected,
+}: DataProps) => {
+  const { isPlay, onStop, onReset, time } = useAnimateScheme();
+  const { setNodeLabel, getEdgeValues } = useStore();
+  const { openDetails } = useNodeDetails();
+  const nodeId = useNodeId();
+  const edges = useEdges<any>();
+  const nodes = useNodes<any>();
+
+  useEffect(() => {
+    let intervalId = null;
+    if (nodeId === null) return;
+    if (!isPlay) {
+      setNodeLabel(nodeId, 0);
+    } else {
+      setNodeLabel(nodeId, 1);
+      let sourceEdge: Edge<Number> = edges.find(
+        (edge) => edge?.target === nodeId
+      )!;
+      // тут в sourceEdge.data хранится значение количество ресурсов
+      let targetEdge: Edge<Number> = edges.find(
+        (edge) => edge?.source === nodeId
+      )!;
+
+      // тут в targetEdge.data хранится значение количества млсекунд * 1000 - то что задержка
+
+      let targetNodeId: Node<any> = nodes.find(
+        (node) => node.id === targetEdge?.target
+      )!;
+      let initialData = +sourceEdge?.data! || 0;
+
+      intervalId = setInterval(() => {
+        // Увеличиваем значение sourceEdge.data каждую секунду на 1
+        initialData += +sourceEdge?.data!;
+
+        // Обновляем метку узла с новым значением sourceEdge.data
+        setNodeLabel(targetNodeId?.id, +initialData);
+      }, time * 1000); // Интервал в миллисекундах (1000 миллисекунд = 1 секунда)
+    }
+    return () => clearInterval(intervalId!);
+  }, [isPlay, onStop, onReset]);
+
+  return (
+    <>
+      <div onDoubleClick={() => openDetails(id, 'consumer')}>
+        <NodeResizer
+          color="blue"
+          isVisible={selected}
+          minWidth={45}
+          minHeight={45}
+        />
+        <StyledNode struct={struct} label={label} name={name} />
+      </div>
+    </>
+  );
+};
+
+export default memo(ConsumerNode);
+```
+
+
+## app\test\[boardId]\_components\_structs\nodeComponents\tulaNodes\converterNode.tsx
+
+```tsx
+"use client";
+import { useAnimateScheme } from "@/app/store/use-animate-scheme";
+import { memo, useEffect } from "react";
+import { Edge, NodeResizer, useEdges, useNodeId, useNodes } from "reactflow";
+import useStore from "@/app/store/store";
+import { StructType } from "@/app/types/structs";
+import { StyledNode } from "../styled-node";
+import { useNodeDetails } from "@/app/store/use-node-details";
+
+interface DataProps {
+  data: {
+    label: string;
+    struct: StructType;
+    name?: string;
+    
+  };
+  selected: boolean;
+  id: string;
+}
+
+const ConverterNode = ({
+  id,
+  data: { label, struct, name, },
+  selected,
+}: DataProps) => {
+  const { isPlay, onStop, onReset, time } = useAnimateScheme();
+  const { setNodeLabel, getEdgeValues } = useStore();
+  const { openDetails } = useNodeDetails();
+  const nodeId = useNodeId();
+  const edges = useEdges<any>();
+  const nodes = useNodes<any>();
+
+  useEffect(() => {
+    let intervalId = null;
+    if (isPlay) {
+
+
+      let newEdges: Edge[] = edges.filter((edge) => edge.target === nodeId)
+      let nodeIds: string[] = newEdges.map((edge) => edge.source);
+
+      if (nodeIds.length > 0) {
+        nodeIds.forEach(nodeId => {
+            let foundNode = nodes.find(node => node.id === nodeId);
+            let edge = edges.find(edge => edge.source === foundNode?.id)
+            if (foundNode) {
+                if (+foundNode.data?.label > edge?.data) {
+                    setNodeLabel(foundNode.id, foundNode.data?.label - edge?.data);
+                }
+            }
+        });
+    }
+
+      const sumOfData = newEdges.reduce((accumulator, currentEdge) => {
+        return accumulator + (+currentEdge.data || 0); 
+      }, 0);
+      intervalId = setInterval(() => {
+
+
+        setNodeLabel(nodeId!, (parseInt(label) + sumOfData));
+      }, time * 1000);
+    }
+
+    return () => clearInterval(intervalId!);
+
+  }, [isPlay, onStop, onReset, label]);
+
+  return (
+    <>
+      <div onDoubleClick={() => openDetails(id, 'converter')}>
+        <NodeResizer
+        color="blue"
+        isVisible={selected}
+        minWidth={45}
+        minHeight={45}
+        />
+        <StyledNode struct={struct} label={label} name={name} />
+      </div>
+    </>
+  );
+};
+
+export default memo(ConverterNode);
+```
+
+
+## app\test\[boardId]\_components\_structs\nodeComponents\tulaNodes\delayNode.tsx
+
+```tsx
+"use client";
+import { useAnimateScheme } from "@/app/store/use-animate-scheme";
+import { memo, useEffect } from "react";
+import {
+  Edge,
+  Node,
+  NodeResizer,
+  useEdges,
+  useNodeId,
+  useNodes,
+} from "reactflow";
+import useStore from "@/app/store/store";
+import { StructType } from "@/app/types/structs";
+import { StyledNode } from "../styled-node";
+import { useNodeDetails } from "@/app/store/use-node-details";
+
+interface DataProps {
+  data: {
+    label: string;
+    struct: StructType;
+    name?: string;
+    
+  };
+  selected: boolean;
+  id: string;
+}
+
+const DelayNode = ({ id, data: { label, struct, name, }, selected }: DataProps) => {
+  const { isPlay, onStop, onReset, time } = useAnimateScheme();
+  const { setNodeLabel, getEdgeValues } = useStore();
+  const { openDetails } = useNodeDetails();
+  const nodeId = useNodeId();
+  const edges = useEdges<any>();
+  const nodes = useNodes<any>();
+
+  useEffect(() => {
+    let intervalId = null;
+    if (!isPlay) {
+      setNodeLabel(nodeId!, 0);
+    } else {
+      setNodeLabel(nodeId!, 1);
+      let sourceEdge: Edge<any> = edges.find((edge) => edge?.target === nodeId)!;
+      // тут в sourceEdge.data хранится значение количество ресурсов
+      let targetEdge: Edge<any> = edges.find((edge) => edge?.source === nodeId)!;
+
+      // тут в targetEdge.data хранится значение количества млсекунд * 1000 - то что задержка
+
+      let targetNodeId: Node<any> = nodes.find(
+        (node) => node.id === targetEdge?.target
+      )!;
+      let initialData = +sourceEdge?.data || 0;
+
+      intervalId = setInterval(() => {
+        // Увеличиваем значение sourceEdge.data каждую секунду на 1
+        initialData += +sourceEdge?.data;
+
+        // Обновляем метку узла с новым значением sourceEdge.data
+        setNodeLabel(targetNodeId?.id, +initialData);
+      }, time * 1000); // Интервал в миллисекундах (1000 миллисекунд = 1 секунда)
+    }
+    return () => clearInterval(intervalId!);
+  }, [isPlay, onStop, onReset]);
+
+  return (
+    <>
+      <div onDoubleClick={() => openDetails(id, 'delay')}>
+        <NodeResizer
+          color="blue"
+          isVisible={selected}
+          minWidth={45}
+          minHeight={45}
+        />
+        <StyledNode struct={struct} label={label} name={name} />
+      </div>
+    </>
+  );
+};
+
+export default memo(DelayNode);
+```
+
+
+## app\test\[boardId]\_components\_structs\nodeComponents\tulaNodes\endNode.tsx
+
+```tsx
+"use client";
+import { useAnimateScheme } from "@/app/store/use-animate-scheme";
+import { memo, useEffect } from "react";
+import {
+  Edge,
+  Node,
+  NodeResizer,
+  useEdges,
+  useNodeId,
+  useNodes,
+} from "reactflow";
+import useStore from "@/app/store/store";
+import { StructType } from "@/app/types/structs";
+import { StyledNode } from "../styled-node";
+import { useNodeDetails } from "@/app/store/use-node-details";
+
+interface DataProps {
+  data: {
+    label: string;
+    struct: StructType;
+    name?: string;
+    
+  };
+  selected: boolean;
+  id: string;
+}
+
+const EndNode = ({ id, data: { label, struct, name, }, selected }: DataProps) => {
+  const { isPlay, onStop, onReset, time } = useAnimateScheme();
+  const { setNodeLabel, getEdgeValues } = useStore();
+  const { openDetails } = useNodeDetails();
+  const nodeId = useNodeId();
+  const edges = useEdges<any>();
+  const nodes = useNodes<any>();
+
+  useEffect(() => {
+    let intervalId = null;
+    if (!isPlay) {
+      setNodeLabel(nodeId!, 0);
+    } else {
+      setNodeLabel(nodeId!, 1);
+      let sourceEdge: Edge<any> = edges.find((edge) => edge?.target === nodeId)!;
+      // тут в sourceEdge.data хранится значение количество ресурсов
+      let targetEdge: Edge<any> = edges.find((edge) => edge?.source === nodeId)!;
+
+      // тут в targetEdge.data хранится значение количества млсекунд * 1000 - то что задержка
+
+      let targetNodeId: Node<any> = nodes.find(
+        (node) => node.id === targetEdge?.target
+      )!;
+      let initialData = +sourceEdge?.data || 0;
+
+      intervalId = setInterval(() => {
+        // Увеличиваем значение sourceEdge.data каждую секунду на 1
+        initialData += +sourceEdge?.data;
+
+        // Обновляем метку узла с новым значением sourceEdge.data
+        setNodeLabel(targetNodeId?.id, +initialData);
+      }, time * 1000); // Интервал в миллисекундах (1000 миллисекунд = 1 секунда)
+    }
+    return () => clearInterval(intervalId!);
+  }, [isPlay, onStop, onReset]);
+
+  return (
+    <>
+      <div onDoubleClick={() => openDetails(id, 'end')}>
+        <NodeResizer
+          color="blue"
+          isVisible={selected}
+          minWidth={45}
+          minHeight={45}
+        />
+        <StyledNode struct={struct} label={label} name={name} />
+      </div>
+    </>
+  );
+};
+
+export default memo(EndNode);
+```
+
+
+## app\test\[boardId]\_components\_structs\nodeComponents\tulaNodes\gateNode.tsx
+
+```tsx
+"use client";
+import { useAnimateScheme } from "@/app/store/use-animate-scheme";
+import { memo, useEffect } from "react";
+import {
+  Edge,
+  Node,
+  NodeResizer,
+  useEdges,
+  useNodeId,
+  useNodes,
+} from "reactflow";
+import useStore from "@/app/store/store";
+import { StructType } from "@/app/types/structs";
+import { StyledNode } from "../styled-node";
+import { useNodeDetails } from "@/app/store/use-node-details";
+
+interface DataProps {
+  data: {
+    label: string;
+    struct: StructType;
+    name?: string;
+    
+  };
+  selected: boolean;
+  id: string;
+}
+
+const GateNode = ({ id, data: { label, struct, name, }, selected }: DataProps) => {
+  const { isPlay, onStop, onReset, time } = useAnimateScheme();
+  const { setNodeLabel, getEdgeValues } = useStore();
+  const { openDetails } = useNodeDetails();
+  const nodeId = useNodeId();
+  const edges = useEdges<any>();
+  const nodes = useNodes<any>();
+
+  useEffect(() => {
+    let intervalId = null;
+    if (!isPlay) {
+      setNodeLabel(nodeId!, 0);
+    } else {
+      setNodeLabel(nodeId!, 1);
+
+      let sourceEdge: Edge<any> = edges.find(
+        (edge) => edge?.target === nodeId
+      )!;
+      // тут в sourceEdge.data хранится значение количество ресурсов
+      let targetEdge: Edge<any> = edges.find(
+        (edge) => edge?.source === nodeId
+      )!;
+
+      // тут в targetEdge.data хранится значение количества млсекунд * 1000 - то что задержка
+      let targetNodeId: Node<any> = nodes.find(
+        (node) => node.id === targetEdge?.target
+      )!;
+      let initialData = +sourceEdge?.data || 0;
+
+      intervalId = setInterval(() => {
+        // Увеличиваем значение sourceEdge.data каждую секунду на 1
+        initialData += +sourceEdge?.data;
+
+        // Обновляем метку узла с новым значением sourceEdge.data
+        setNodeLabel(targetNodeId?.id, +initialData);
+      }, time * 1000); // Интервал в миллисекундах (1000 миллисекунд = 1 секунда)
+    }
+    return () => clearInterval(intervalId!);
+  }, [isPlay, onStop, onReset]);
+
+  return (
+    <>
+      <div onDoubleClick={() => openDetails(id, 'gate')}>
+        <NodeResizer
+          color="blue"
+          isVisible={selected}
+          minWidth={45}
+          minHeight={45}
+        />
+        <StyledNode struct={struct} label={label} name={name} />
+      </div>
+    </>
+  );
+};
+
+export default memo(GateNode);
+```
+
+
+## app\test\[boardId]\_components\_structs\nodeComponents\tulaNodes\poolNode.tsx
+
+```tsx
+"use client";
+import { useAnimateScheme } from "@/app/store/use-animate-scheme";
+import { memo, useEffect } from "react";
+import {
+  Edge,
+  Node,
+  NodeResizer,
+  useEdges,
+  useNodeId,
+  useNodes,
+} from "reactflow";
+import useStore from "@/app/store/store";
+import { StructType } from "@/app/types/structs";
+import { StyledNode } from "../styled-node";
+import { useNodeDetails } from "@/app/store/use-node-details";
+
+interface DataProps {
+  id: string;
+  data: {
+    label: string;
+    struct: StructType;
+    name?: string | undefined;
+  };
+  selected: boolean;
+}
+
+const PoolNode = ({
+  data: { label, struct, name },
+  selected,
+  id,
+}: DataProps) => {
+  const { isPlay, onStop, onReset, time, gamesCount, resetNodes } =
+    useAnimateScheme();
+
+  const { openDetails } = useNodeDetails();
+  const { setNodeLabel, getEdgeValues } = useStore();
+  const nodeId = useNodeId();
+  const edges = useEdges<any>();
+  const nodes = useNodes<any>();
+
+  useEffect(() => {
+    let intervalId = null;
+    if (isPlay) {
+      let newEdges = edges.filter((edge) => edge.target === nodeId);
+      const sumOfData = newEdges.reduce((accumulator, currentEdge) => {
+        return accumulator + (+currentEdge.data || 0);
+      }, 0);
+      intervalId = setInterval(() => {
+        setNodeLabel(nodeId!, parseInt(label) + sumOfData);
+      }, time * 1000);
+    }
+    return () => clearInterval(intervalId!);
+  }, [isPlay, onStop, onReset, label, gamesCount]);
+
+  return (
+    <>
+      <div onDoubleClick={() => openDetails(id, 'pool')}>
+        <NodeResizer
+          color="blue"
+          isVisible={selected}
+          minWidth={45}
+          minHeight={45}
+        />
+
+        <StyledNode struct={struct} label={label} name={name} />
+      </div>
+
+    </>
+  );
+};
+
+export default memo(PoolNode);
+```
+
+
+## app\test\[boardId]\_components\_structs\nodeComponents\tulaNodes\randomNode.tsx
+
+```tsx
+"use client";
+import { useAnimateScheme } from "@/app/store/use-animate-scheme";
+import { memo, useEffect } from "react";
+import {
+  Edge,
+  Node,
+  NodeResizer,
+  useEdges,
+  useNodeId,
+  useNodes,
+} from "reactflow";
+import useStore from "@/app/store/store";
+import { StructType } from "@/app/types/structs";
+import { StyledNode } from "../styled-node";
+
+interface DataProps {
+  data: {
+    label: string;
+    struct: StructType;
+    name?: string;
+  };
+  selected: boolean;
+}
+
+const RandomNode = ({ data: { label, struct, name }, selected }: DataProps) => {
+  const { isPlay, onStop, onReset, time } = useAnimateScheme();
+  const { setNodeLabel, getEdgeValues } = useStore();
+  const nodeId = useNodeId();
+  const edges = useEdges<any>();
+  const nodes = useNodes<any>();
+
+
+
+  useEffect(() => {
+    let intervalId = null;
+    if (isPlay) {
+      const initialValue = label || null
+      let newEdges: Edge[] = edges.filter((edge) => edge.source === nodeId)
+      let nodeIds: string[] = newEdges.map(edge => edge.target)      //идишники нод
+      
+    //   intervalId = setInterval(() => {
+
+    //     setNodeLabel(nodeId, (parseInt(label) + sumOfData).toString());
+    //   }, time * 1000);
+
+    
+    }
+    return () => clearInterval(intervalId!);
+  }, [isPlay, onStop, onReset, label]);
+
+  return (
+    <>
+      <NodeResizer
+        color="blue"
+        isVisible={selected}
+        minWidth={45}
+        minHeight={45}
+      />
+      <StyledNode struct={struct} label={label} name={name} />
+    </>
+  );
+};
+
+export default memo(RandomNode);
+```
+
+
+## app\test\[boardId]\_components\_structs\nodeComponents\tulaNodes\sourceNode.tsx
+
+```tsx
+"use client";
+import { useAnimateScheme } from "@/app/store/use-animate-scheme";
+import { memo, useEffect } from "react";
+import { Edge, NodeResizer, useEdges, useNodeId, useNodes } from "reactflow";
+import useStore from "@/app/store/store";
+import { StructType } from "@/app/types/structs";
+import { StyledNode } from "../styled-node";
+import { useNodeDetails } from "@/app/store/use-node-details";
+
+interface DataProps {
+  data: {
+    label: string;
+    struct: StructType;
+    name?: string;
+    
+  };
+  selected: boolean;
+  id: string;
+}
+
+const SourceNode = ({ id, data: { label, struct, name,  }, selected }: DataProps) => {
+  const { isPlay, onStop, onReset, time } = useAnimateScheme();
+  const { setNodeLabel, getEdgeValues } = useStore();
+  const { openDetails } = useNodeDetails();
+  const nodeId = useNodeId();
+  const edges = useEdges();
+  const nodes = useNodes();
+
+  useEffect(() => {
+    let intervalIds: NodeJS.Timeout[] = [];
+
+    if (isPlay && nodeId) {
+      let targetEdges: Edge[] = edges.filter((edge) => edge?.source === nodeId);
+      targetEdges.forEach((edge) => {
+        const targetNode = nodes.find((node) => node.id === edge.target);
+        if (!targetNode) return;
+
+        let initialData = 0;
+
+        const intervalId = setInterval(() => {
+          initialData += +edge.data;
+          setNodeLabel(targetNode?.id!, +initialData);
+        }, time * 1000);
+
+        intervalIds.push(intervalId);
+      });
+    }
+    return () => {
+      intervalIds.forEach((intervalId) => clearInterval(intervalId));
+    };
+  }, [isPlay, onStop, onReset, edges, nodeId, nodes, time, setNodeLabel]);
+
+  return (
+    <>
+      <div onDoubleClick={() => openDetails(id, 'source')}>
+        <NodeResizer
+          color="blue"
+          isVisible={selected}
+          minWidth={45}
+          minHeight={45}
+        />
+        <StyledNode struct={struct} label={label} name={name} />
+      </div>
+    </>
+  );
+};
+
+export default memo(SourceNode);
+```
+
+
+## app\test\[boardId]\_components\_structs\nodeComponents\tulaNodes\triggerNode.tsx
+
+```tsx
+"use client";
+import { useAnimateScheme } from "@/app/store/use-animate-scheme";
+import { memo, useEffect } from "react";
+import {
+  Edge,
+  Node,
+  NodeResizer,
+  useEdges,
+  useNodeId,
+  useNodes,
+} from "reactflow";
+import useStore from "@/app/store/store";
+import { StructType } from "@/app/types/structs";
+import { StyledNode } from "../styled-node";
+import { useNodeDetails } from "@/app/store/use-node-details";
+
+interface DataProps {
+  id: string;
+  data: {
+    label: string;
+    struct: StructType;
+    name?: string | undefined;
+  };
+  selected: boolean;
+}
+
+const TriggerNode = ({
+  data: { label, struct, name },
+  selected,
+  id,
+}: DataProps) => {
+  const { isPlay, onStop, onReset, time, gamesCount, resetNodes } =
+    useAnimateScheme();
+
+  const { openDetails } = useNodeDetails();
+  const { setNodeLabel, getEdgeValues } = useStore();
+  const nodeId = useNodeId();
+  const edges = useEdges<any>();
+  const nodes = useNodes<any>();
+
+  useEffect(() => {
+    let intervalId = null;
+    if (isPlay) {
+      let newEdges = edges.filter((edge) => edge.target === nodeId);
+      const sumOfData = newEdges.reduce((accumulator, currentEdge) => {
+        return accumulator + (+currentEdge.data || 0);
+      }, 0);
+      intervalId = setInterval(() => {
+        setNodeLabel(nodeId!, parseInt(label) + sumOfData);
+      }, time * 1000);
+    }
+    return () => clearInterval(intervalId!);
+  }, [isPlay, onStop, onReset, label, gamesCount]);
+
+  return (
+    <>
+      <div onDoubleClick={() => openDetails(id, 'trigger')}>
+        <NodeResizer
+          color="blue"
+          isVisible={selected}
+          minWidth={45}
+          minHeight={45}
+        />
+
+        <StyledNode struct={struct} label={label} name={name} />
+      </div>
+
+    </>
+  );
+};
+
+export default memo(TriggerNode);
+```
+
+
+## app\test\[boardId]\_components\_structs\nodeComponents\nodeStyle.css
+
+```css
+.delayNode{
+    border: 2px solid red;
+    position: relative;
+    height: 50px;
+    width: 50px;
+    overflow: hidden;
+    border-radius: 5px;
+    display: flex;
+    background: white;
+    justify-content: center;
+    align-items: center;
+    font-weight: bold;
+}
+
+.consumerNode{
+    border: 2px solid blue;
+    position: relative;
+    height: 50px;
+    width: 50px;
+    overflow: hidden;
+    border-radius: 100%;
+    display: flex;
+    background: white;
+    justify-content: center;
+    align-items: center;
+    font-weight: bold;
+}
+
+.converterNode{
+    border: 2px solid blue;
+    position: relative;
+    height: 50px;
+    width: 50px;
+    overflow: hidden;
+    border-radius: 100%;
+    display: flex;
+    background: white;
+    justify-content: center;
+    align-items: center;
+    font-weight: bold;
+}
+
+.triggerNode{
+    border: 2px solid black;
+    position: relative;
+    height: 50px;
+    width: 50px;
+    overflow: hidden;
+    border-radius: 100%;
+    display: flex;
+    background: white;
+    justify-content: center;
+    align-items: center;
+    font-weight: bold;
+}
+
+.endNode{
+    border: 2px solid black;
+    position: relative;
+    height: 50px;
+    width: 50px;
+    overflow: hidden;
+    border-radius: 5px;
+    display: flex;
+    background: white;
+    justify-content: center;
+    align-items: center;
+    font-weight: bold;
+}
+
+.gateNode{
+    border: 2px solid blue;
+    position: relative;
+    height: 50px;
+    width: 50px;
+    overflow: hidden;
+    border-radius: 100%;
+    display: flex;
+    background: white;
+    justify-content: center;
+    align-items: center;
+    font-weight: bold;
+}
+
+.poolNode{
+    border: 2px solid blue;
+    position: relative;
+    height: 50px;
+    width: 50px;
+    overflow: hidden;
+    border-radius: 100%;
+    display: flex;
+    background: white;
+    justify-content: center;
+    align-items: center;
+    font-weight: bold;
+}
+
+.sourceNode{
+    border: 2px solid greenyellow;
+    position: relative;
+    height: 50px;
+    width: 50px;
+    overflow: hidden;
+    border-radius: 100%;
+    display: flex;
+    background: white;
+    justify-content: center;
+    align-items: center;
+    font-weight: bold;
+}
+
+.randomNode{
+    border: 2px solid red;
+    position: relative;
+    height: 50px;
+    width: 50px;
+    overflow: hidden;
+    border-radius: 5px;
+    display: flex;
+    background: white;
+    justify-content: center;
+    align-items: center;
+    font-weight: bold;
+}
+```
+
+
+## app\test\[boardId]\_components\_structs\nodeComponents\styled-node.tsx
+
+```tsx
+"use client";
+import {
+  ArrowLeftRight,
+  Recycle,
+  Dices,
+  Hourglass,
+  Play,
+  CheckCheck,
+  LucideIcon,
+  Minus,
+  Webhook
+} from "lucide-react";
+import "./nodeStyle.css";
+import { StructType } from "@/app/types/structs";
+import { Handle, Position, useNodeId } from "reactflow";
+import { useState } from "react";
+import useStore from "@/app/store/store";
+
+interface ITestNodeProps {
+  struct: StructType;
+  label: string;
+  name?: string;
+}
+
+type StructStyles = {
+  [key in StructType]: string;
+};
+
+interface StructIcons {
+  [key: string]: LucideIcon;
+}
+
+const styleNode: StructStyles = {
+  Consumer: "consumerNode",
+  Converter: "converterNode",
+  Delay: "delayNode",
+  End: "endNode",
+  Gate: "gateNode",
+  Pool: "poolNode",
+  Random: "randomNode",
+  Source: "sourceNode",
+  Entity: "entityNode",
+  State: "stateNode",
+  Event: "eventNode",
+  Rule: "ruleNode",
+  Operator: "operatorNode",
+  Trigger: "triggerNode"
+};
+
+const styleNodeIcon: any = {
+  Source: <Play />,
+  Converter: <Recycle />,
+  Consumer: <Minus />,
+  Delay: <Hourglass />,
+  Gate: <ArrowLeftRight />,
+  Random: <Dices />,
+  End: <CheckCheck />,
+  Trigger: <Webhook />,
+};
+
+export const StyledNode = ({ struct, label, name }: ITestNodeProps) => {
+  const { setNodeName } = useStore();
+  const nodeId = useNodeId();
+
+  const [value, setValue] = useState(name);
+  const onChange = (event: any) => {
+    setValue(event.target.value);
+    setNodeName(nodeId!, event.target.value);
+  };
+
+  return (
+    <div>
+      {struct !== StructType.Source && (
+        <Handle type={"target"} position={Position.Left} />
+      )}
+      <div className={styleNode[struct]}>
+        {struct in styleNodeIcon ? styleNodeIcon[struct] : label}
+        {/* {label} */}
+      </div>
+      {struct !== StructType.End && (
+        <Handle type="source" position={Position.Right} />
+      )}
+      <div className="h-full w-full flex justify-center">
+        <input
+          className="bg-transparent w-[50px] border-none text-xs font-bold text-center"
+          value={value}
+          onChange={onChange}
+        />
+      </div>
+    </div>
+  );
+};
+```
+
+
 ## app\test\[boardId]\_components\_structs\custom-node.tsx
 
 ```tsx
@@ -5685,78 +6123,6 @@ const CustomNode = ({ data: { label, struct, name }, selected }: DataProps) => {
 };
 
 export default memo(CustomNode);
-```
-
-
-## app\test\[boardId]\_components\_structs\probabilistic-edge.tsx
-
-```tsx
-import React, { useState } from "react";
-import { EdgeProps, getBezierPath, EdgeLabelRenderer } from "reactflow";
-
-export default function ProbabilisticEdge(props: EdgeProps) {
-  const {
-    sourceX,
-    sourceY,
-    targetX,
-    targetY,
-    sourcePosition,
-    targetPosition,
-    data = {},
-    id,
-  } = props;
-  const [probability, setProbability] = useState(data.probability || 0.5);
-  const [edgePath, labelX, labelY] = getBezierPath({
-    sourceX,
-    sourceY,
-    sourcePosition,
-    targetX,
-    targetY,
-    targetPosition,
-  });
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = parseFloat(e.target.value);
-    setProbability(val);
-    // Здесь можно вызвать функцию обновления данных ребра (например, через стор)
-    // onEdgeDataChange? id, { probability: val }
-  };
-
-  return (
-    <>
-      <path
-        id={id}
-        style={{ stroke: '#ff6b6b', strokeWidth: 2 }}
-        d={edgePath}
-        markerEnd={props.markerEnd}
-      />
-      <EdgeLabelRenderer>
-        <div
-          style={{
-            position: 'absolute',
-            transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
-            background: '#fff',
-            padding: '2px 4px',
-            borderRadius: '4px',
-            border: '1px solid #ccc',
-            pointerEvents: 'all',
-          }}
-          className="nodrag nopan"
-        >
-          <input
-            type="number"
-            min="0"
-            max="1"
-            step="0.1"
-            value={probability}
-            onChange={handleChange}
-            style={{ width: '50px' }}
-          />
-        </div>
-      </EdgeLabelRenderer>
-    </>
-  );
-}
 ```
 
 
@@ -7670,18 +8036,28 @@ export const EdgeTypePanel = () => {
 import { StructType } from "@/app/types/structs";
 import { ToolButton } from "../ui/ToolButton";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   ArrowLeftRight,
   Recycle,
   Play,
   Dices,
   Hourglass,
+  Webhook,
   CheckCheck,
   Undo,
   Redo,
   BadgePlus,
   BadgeMinus,
   Eraser,
-  Box, Layers, Zap, Scale, Sigma, Link2, Percent, GitMerge
+  Box, Layers, Zap, Scale, Sigma, Link2, Percent, GitMerge,
+  ChevronDown,
+  ChevronRight
 } from "lucide-react";
 import useStore, { RFState } from "@/app/store/store";
 import { shallow } from "zustand/shallow";
@@ -7709,91 +8085,80 @@ export const Toolbar = () => {
   const { deleteAll } = useStore();
   const { edgeType, setEdgeType } = useStore();
 
+  const [isTulaOpen, setIsTulaOpen] = useState(true);
+  const [isSpecOpen, setIsSpecOpen] = useState(true);
+
   return (
     <div className="absolute top-40 left-2 flex flex-col gap-y-4">
+      {/* Раздел TULA */}
       <div className="bg-white rounded-md p-1.5 flex gap-y-1 flex-col items-center shadow-md">
-        <ToolButton
-          label="Source"
-          onClick={() => addNode(StructType.Source)}
-          isActive={false}
-          icon={Play}
-        />
-        <ToolButton
-          label="Pool"
-          onClick={() => addNode(StructType.Pool)}
-          isActive={false}
-          icon={BadgePlus}
-        />
-        <ToolButton
-          label="Consumer"
-          onClick={() => addNode(StructType.Consumer)}
-          isActive={false}
-          icon={BadgeMinus}
-        />
-        <ToolButton
-          label="Converter"
-          onClick={() => addNode(StructType.Converter)}
-          isActive={true}
-          icon={Recycle}
-        />
-        <ToolButton
-          label="Gate"
-          onClick={() => addNode(StructType.Gate)}
-          isActive={false}
-          icon={ArrowLeftRight}
-        />
-        <ToolButton
-          label="Random"
-          onClick={() => addNode(StructType.Random)}
-          isActive={false}
-          icon={Dices}
-        />
-        <ToolButton
-          label="Delay"
-          onClick={() => addNode(StructType.Delay)}
-          isActive={false}
-          icon={Hourglass}
-        />
-        <ToolButton
-          label="End"
-          onClick={() => addNode(StructType.End)}
-          isActive={false}
-          icon={CheckCheck}
-        />
-        <div className="bg-white rounded-md p-1.5 flex gap-y-1 flex-col items-center shadow-md">
-          <ToolButton label="Entity" onClick={() => addNode(StructType.Entity)} icon={Box} />
-          <ToolButton label="State" onClick={() => addNode(StructType.State)} icon={Layers} />
-          <ToolButton label="Event" onClick={() => addNode(StructType.Event)} icon={Zap} />
-          <ToolButton label="Rule" onClick={() => addNode(StructType.Rule)} icon={Scale} />
-          <ToolButton label="Operator" onClick={() => addNode(StructType.Operator)} icon={Sigma} />
+        <button
+          onClick={() => setIsTulaOpen(!isTulaOpen)}
+          className="w-full flex items-center justify-between px-3 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-50 transition-colors"
+        >
+          <span>TULA</span>
+          {isTulaOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+        </button>
+        {isTulaOpen && (
+          <div className="p-3 pt-0 grid grid-cols-3 gap-1 animate-in slide-in-from-top-1 duration-200">
+            <ToolButton label="Source" onClick={() => addNode(StructType.Source)} isActive={false} icon={Play} />
+            <ToolButton label="Pool" onClick={() => addNode(StructType.Pool)} isActive={false} icon={BadgePlus} />
+            <ToolButton label="Consumer" onClick={() => addNode(StructType.Consumer)} isActive={false} icon={BadgeMinus} />
+            <ToolButton label="Converter" onClick={() => addNode(StructType.Converter)} isActive={true} icon={Recycle} />
+            <ToolButton label="Gate" onClick={() => addNode(StructType.Gate)} isActive={false} icon={ArrowLeftRight} />
+            <ToolButton label="Random" onClick={() => addNode(StructType.Random)} isActive={false} icon={Dices} />
+            <ToolButton label="Delay" onClick={() => addNode(StructType.Delay)} isActive={false} icon={Hourglass} />
+            <ToolButton label="Trigger" onClick={() => addNode(StructType.Trigger)} isActive={false} icon={Webhook} />
+            <ToolButton label="End" onClick={() => addNode(StructType.End)} isActive={false} icon={CheckCheck} />
+          </div>
+        )}
+      </div>
+
+      {/* Раздел SPEC */}
+      <div className="bg-white rounded-md shadow-md overflow-hidden transition-all duration-200">
+        <button
+          onClick={() => setIsSpecOpen(!isSpecOpen)}
+          className="w-full flex items-center justify-between px-3 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-50 transition-colors"
+        >
+          <span>SPEC</span>
+          {isSpecOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+        </button>
+        {isSpecOpen && (
+          <div className="p-3 pt-0 grid grid-cols-3 gap-1 animate-in slide-in-from-top-1 duration-200">
+            <ToolButton label="Entity" onClick={() => addNode(StructType.Entity)} icon={Box} />
+            <ToolButton label="State" onClick={() => addNode(StructType.State)} icon={Layers} />
+            <ToolButton label="Event" onClick={() => addNode(StructType.Event)} icon={Zap} />
+            <ToolButton label="Rule" onClick={() => addNode(StructType.Rule)} icon={Scale} />
+            <ToolButton label="Operator" onClick={() => addNode(StructType.Operator)} icon={Sigma} />
+          </div>
+        )}
+      </div>
+
+      {/* Раздел GENERAL (всегда открыт) */}
+      <div className="bg-white rounded-md p-3 shadow-md">
+        <div className="text-xs font-semibold text-gray-500 mb-2 tracking-wider text-center">
+          GENERAL
         </div>
 
-        <div className="bg-white rounded-md p-1.5 flex gap-x-1 flex-col items-center shadow-md mt-2">
-          <ToolButton label="Default Edge" onClick={() => setEdgeType('custom')} icon={Link2} isActive={edgeType === 'custom'} />
-          <ToolButton label="Probabilistic" onClick={() => setEdgeType('probabilistic')} icon={Percent} isActive={edgeType === 'probabilistic'} />
-          <ToolButton label="Conditional" onClick={() => setEdgeType('conditional')} icon={GitMerge} isActive={edgeType === 'conditional'} />
+        <label>Edge type:</label>
+        <Select value={edgeType} onValueChange={(value: any) => setEdgeType(value)}>
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Edge type" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="custom">Resource</SelectItem>
+            <SelectItem value="probabilistic">Probabilistic</SelectItem>
+            <SelectItem value="conditional">Conditional</SelectItem>
+            <SelectItem value="trigger">Trigger</SelectItem>
+            <SelectItem value="modifier">Modifier</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <div className="grid grid-cols-3 gap-1 mt-1">
+          <ToolButton label="Undo" onClick={() => {}} isActive={false} icon={Undo} />
+          <ToolButton label="Redo" onClick={() => {}} isActive={false} icon={Redo} />
+          <ToolButton label="Eraser" onClick={deleteAll} isActive={false} icon={Eraser} />
         </div>
-      </div>
-      {/* undo redo */}
-      <div className="bg-white rounded-md p-1.5 flex flex-col items-center shadow-md">
-        <ToolButton
-          label="Undo"
-          onClick={() => {}}
-          isActive={false}
-          icon={Undo}
-        />
-        <ToolButton
-          label="Redo"
-          onClick={() => {}}
-          isActive={false}
-          icon={Redo}
-        />
-        <ToolButton
-          label="Eraser"
-          onClick={deleteAll}
-          isActive={false}
-          icon={Eraser}
-        />
       </div>
     </div>
   );
@@ -8092,6 +8457,7 @@ import { LucideIcon } from "lucide-react";
 
 import { Hint } from "@/components/hint";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/utils/canvas";
 
 interface ToolButtonProps {
   label: string;
@@ -8116,7 +8482,13 @@ export const ToolButton = ({
         disabled={isDisabled}
         onClick={onClick}
         size="icon"
-        style={{ margin: "1px", background: background }}
+        className={cn(
+          "m-1 transition-colors",
+          isActive
+            ? "bg-blue-500 hover:bg-blue-600 text-white"
+            : `bg-${background}`
+        )}
+        style={{ background: !isActive ? background : undefined }}
       >
         <Icon />
       </Button>
@@ -12787,24 +13159,27 @@ export enum BoardSavingStatus {
 
 ```ts
 import { Node } from "reactflow";
-import CustomEdge from "../test/[boardId]/_components/_structs/custom-edge";
+import CustomEdge from "../test/[boardId]/_components/_structs/edgeComponents/custom-edge";
 import CustomNode from "./../test/[boardId]/_components/_structs/custom-node";
-import SourceNode from "./../test/[boardId]/_components/_structs/nodeComponents/sourceNode";
-import PoolNode from "./../test/[boardId]/_components/_structs/nodeComponents/poolNode";
-import ConsumerNode from "./../test/[boardId]/_components/_structs/nodeComponents/consumerNode";
-import ConverterNode from "./../test/[boardId]/_components/_structs/nodeComponents/converterNode";
-import GateNode from "./../test/[boardId]/_components/_structs/nodeComponents/gateNode";
-import RandomNode from "./../test/[boardId]/_components/_structs/nodeComponents/randomNode";
-import DelayNode from "./../test/[boardId]/_components/_structs/nodeComponents/delayNode";
-import EndNode from "./../test/[boardId]/_components/_structs/nodeComponents/endNode";
-import consumerNode from "./../test/[boardId]/_components/_structs/nodeComponents/consumerNode";
-import EntityNode from "../test/[boardId]/_components/_structs/nodeComponents/entityNode";
-import EventNode from "../test/[boardId]/_components/_structs/nodeComponents/eventNode";
-import OperatorNode from "../test/[boardId]/_components/_structs/nodeComponents/operatorNode";
-import RuleNode from "../test/[boardId]/_components/_structs/nodeComponents/ruleNode";
-import StateNode from "../test/[boardId]/_components/_structs/nodeComponents/stateNode";
-import ConditionalEdge from "../test/[boardId]/_components/_structs/conditional-edge";
-import ProbabilisticEdge from "../test/[boardId]/_components/_structs/probabilistic-edge";
+import SourceNode from "../test/[boardId]/_components/_structs/nodeComponents/tulaNodes/sourceNode";
+import PoolNode from "../test/[boardId]/_components/_structs/nodeComponents/tulaNodes/poolNode";
+import ConsumerNode from "../test/[boardId]/_components/_structs/nodeComponents/tulaNodes/consumerNode";
+import ConverterNode from "../test/[boardId]/_components/_structs/nodeComponents/tulaNodes/converterNode";
+import GateNode from "../test/[boardId]/_components/_structs/nodeComponents/tulaNodes/gateNode";
+import RandomNode from "../test/[boardId]/_components/_structs/nodeComponents/tulaNodes/randomNode";
+import DelayNode from "../test/[boardId]/_components/_structs/nodeComponents/tulaNodes/delayNode";
+import TriggerNode from "../test/[boardId]/_components/_structs/nodeComponents/tulaNodes/triggerNode";
+import EndNode from "../test/[boardId]/_components/_structs/nodeComponents/tulaNodes/endNode";
+import consumerNode from "../test/[boardId]/_components/_structs/nodeComponents/tulaNodes/consumerNode";
+import EntityNode from "../test/[boardId]/_components/_structs/nodeComponents/specNodes/entityNode";
+import EventNode from "../test/[boardId]/_components/_structs/nodeComponents/specNodes/eventNode";
+import OperatorNode from "../test/[boardId]/_components/_structs/nodeComponents/specNodes/operatorNode";
+import RuleNode from "../test/[boardId]/_components/_structs/nodeComponents/specNodes/ruleNode";
+import StateNode from "../test/[boardId]/_components/_structs/nodeComponents/specNodes/stateNode";
+import ConditionalEdge from "../test/[boardId]/_components/_structs/edgeComponents/conditional-edge";
+import ProbabilisticEdge from "../test/[boardId]/_components/_structs/edgeComponents/probabilistic-edge";
+import TriggerEdge from "../test/[boardId]/_components/_structs/edgeComponents/trigger-edge";
+import ModifierEdge from "../test/[boardId]/_components/_structs/edgeComponents/modifier-edge";
 
 enum StructType {
   Source = "Source",
@@ -12814,6 +13189,7 @@ enum StructType {
   Gate = "Gate",
   Random = "Random",
   Delay = "Delay",
+  Trigger = "Trigger",
   End = "End",
     // Новые типы
   Entity = "Entity",
@@ -12821,6 +13197,7 @@ enum StructType {
   Event = "Event",
   Rule = "Rule",
   Operator = "Operator",
+  
 }
 export { StructType };
 
@@ -12872,6 +13249,12 @@ export type DelayStruct = {
   value?: string;
 };
 
+export type TriggerStruct = {
+  id: number | string;
+  type: StructType.End;
+  value?: string;
+};
+
 export type EndStruct = {
   id: number | string;
   type: StructType.End;
@@ -12886,6 +13269,7 @@ export type Structs =
   | GateStruct
   | RandomStruct
   | DelayStruct
+  | TriggerStruct
   | EndStruct;
 
 export const nodeTypes = {
@@ -12897,6 +13281,7 @@ export const nodeTypes = {
   gateNode: GateNode,
   randomNode: RandomNode,
   delayNode: DelayNode,
+  triggerNode: TriggerNode,
   endNode: EndNode,
   entityNode: EntityNode,
   stateNode: StateNode,
@@ -12908,6 +13293,8 @@ export const edgeTypes = {
   custom: CustomEdge,
   probabilistic: ProbabilisticEdge,
   conditional: ConditionalEdge,
+  trigger: TriggerEdge,
+  modifier: ModifierEdge,
 };
 
 export interface Graph {
@@ -13436,6 +13823,90 @@ export { Button, buttonVariants }
 ```
 
 
+## components\ui\card.tsx
+
+```tsx
+import * as React from "react";
+import { cn } from "@/utils/canvas";
+
+const Card = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
+>(({ className, ...props }, ref) => (
+  <div
+    ref={ref}
+    className={cn(
+      "rounded-lg border bg-card text-card-foreground shadow-sm",
+      className
+    )}
+    {...props}
+  />
+));
+Card.displayName = "Card";
+
+const CardHeader = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
+>(({ className, ...props }, ref) => (
+  <div
+    ref={ref}
+    className={cn("flex flex-col space-y-1.5 p-6", className)}
+    {...props}
+  />
+));
+CardHeader.displayName = "CardHeader";
+
+const CardTitle = React.forwardRef<
+  HTMLParagraphElement,
+  React.HTMLAttributes<HTMLHeadingElement>
+>(({ className, ...props }, ref) => (
+  <h3
+    ref={ref}
+    className={cn(
+      "text-2xl font-semibold leading-none tracking-tight",
+      className
+    )}
+    {...props}
+  />
+));
+CardTitle.displayName = "CardTitle";
+
+const CardDescription = React.forwardRef<
+  HTMLParagraphElement,
+  React.HTMLAttributes<HTMLParagraphElement>
+>(({ className, ...props }, ref) => (
+  <p
+    ref={ref}
+    className={cn("text-sm text-muted-foreground", className)}
+    {...props}
+  />
+));
+CardDescription.displayName = "CardDescription";
+
+const CardContent = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
+>(({ className, ...props }, ref) => (
+  <div ref={ref} className={cn("p-6 pt-0", className)} {...props} />
+));
+CardContent.displayName = "CardContent";
+
+const CardFooter = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
+>(({ className, ...props }, ref) => (
+  <div
+    ref={ref}
+    className={cn("flex items-center p-6 pt-0", className)}
+    {...props}
+  />
+));
+CardFooter.displayName = "CardFooter";
+
+export { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent };
+```
+
+
 ## components\ui\dialog.tsx
 
 ```tsx
@@ -13801,6 +14272,287 @@ export { Input }
 ```
 
 
+## components\ui\label.tsx
+
+```tsx
+"use client";
+
+import * as React from "react";
+import * as LabelPrimitive from "@radix-ui/react-label";
+import { cva, type VariantProps } from "class-variance-authority";
+import { cn } from "@/utils/canvas";
+
+const labelVariants = cva(
+  "text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+);
+
+const Label = React.forwardRef<
+  React.ElementRef<typeof LabelPrimitive.Root>,
+  React.ComponentPropsWithoutRef<typeof LabelPrimitive.Root> &
+    VariantProps<typeof labelVariants>
+>(({ className, ...props }, ref) => (
+  <LabelPrimitive.Root
+    ref={ref}
+    className={cn(labelVariants(), className)}
+    {...props}
+  />
+));
+Label.displayName = LabelPrimitive.Root.displayName;
+
+export { Label };
+```
+
+
+## components\ui\scroll-area.tsx
+
+```tsx
+"use client";
+
+import * as React from "react";
+import * as ScrollAreaPrimitive from "@radix-ui/react-scroll-area";
+import { cn } from "@/utils/canvas";
+
+const ScrollArea = React.forwardRef<
+  React.ElementRef<typeof ScrollAreaPrimitive.Root>,
+  React.ComponentPropsWithoutRef<typeof ScrollAreaPrimitive.Root>
+>(({ className, children, ...props }, ref) => (
+  <ScrollAreaPrimitive.Root
+    ref={ref}
+    className={cn("relative overflow-hidden", className)}
+    {...props}
+  >
+    <ScrollAreaPrimitive.Viewport className="h-full w-full rounded-[inherit]">
+      {children}
+    </ScrollAreaPrimitive.Viewport>
+    <ScrollBar />
+    <ScrollAreaPrimitive.Corner />
+  </ScrollAreaPrimitive.Root>
+));
+ScrollArea.displayName = ScrollAreaPrimitive.Root.displayName;
+
+const ScrollBar = React.forwardRef<
+  React.ElementRef<typeof ScrollAreaPrimitive.ScrollAreaScrollbar>,
+  React.ComponentPropsWithoutRef<typeof ScrollAreaPrimitive.ScrollAreaScrollbar>
+>(({ className, orientation = "vertical", ...props }, ref) => (
+  <ScrollAreaPrimitive.ScrollAreaScrollbar
+    ref={ref}
+    orientation={orientation}
+    className={cn(
+      "flex touch-none select-none transition-colors",
+      orientation === "vertical" &&
+        "h-full w-2.5 border-l border-l-transparent p-[1px]",
+      orientation === "horizontal" &&
+        "h-2.5 flex-col border-t border-t-transparent p-[1px]",
+      className
+    )}
+    {...props}
+  >
+    <ScrollAreaPrimitive.ScrollAreaThumb className="relative flex-1 rounded-full bg-border" />
+  </ScrollAreaPrimitive.ScrollAreaScrollbar>
+));
+ScrollBar.displayName = ScrollAreaPrimitive.ScrollAreaScrollbar.displayName;
+
+export { ScrollArea, ScrollBar };
+```
+
+
+## components\ui\select.tsx
+
+```tsx
+"use client";
+
+import * as React from "react";
+import * as SelectPrimitive from "@radix-ui/react-select";
+import { Check, ChevronDown, ChevronUp } from "lucide-react";
+import { cn } from "@/utils/canvas";
+
+const Select = SelectPrimitive.Root;
+const SelectGroup = SelectPrimitive.Group;
+const SelectValue = SelectPrimitive.Value;
+
+const SelectTrigger = React.forwardRef<
+  React.ElementRef<typeof SelectPrimitive.Trigger>,
+  React.ComponentPropsWithoutRef<typeof SelectPrimitive.Trigger>
+>(({ className, children, ...props }, ref) => (
+  <SelectPrimitive.Trigger
+    ref={ref}
+    className={cn(
+      "flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1",
+      className
+    )}
+    {...props}
+  >
+    {children}
+    <SelectPrimitive.Icon asChild>
+      <ChevronDown className="h-4 w-4 opacity-50" />
+    </SelectPrimitive.Icon>
+  </SelectPrimitive.Trigger>
+));
+SelectTrigger.displayName = SelectPrimitive.Trigger.displayName;
+
+const SelectScrollUpButton = React.forwardRef<
+  React.ElementRef<typeof SelectPrimitive.ScrollUpButton>,
+  React.ComponentPropsWithoutRef<typeof SelectPrimitive.ScrollUpButton>
+>(({ className, ...props }, ref) => (
+  <SelectPrimitive.ScrollUpButton
+    ref={ref}
+    className={cn(
+      "flex cursor-default items-center justify-center py-1",
+      className
+    )}
+    {...props}
+  >
+    <ChevronUp className="h-4 w-4" />
+  </SelectPrimitive.ScrollUpButton>
+));
+SelectScrollUpButton.displayName = SelectPrimitive.ScrollUpButton.displayName;
+
+const SelectScrollDownButton = React.forwardRef<
+  React.ElementRef<typeof SelectPrimitive.ScrollDownButton>,
+  React.ComponentPropsWithoutRef<typeof SelectPrimitive.ScrollDownButton>
+>(({ className, ...props }, ref) => (
+  <SelectPrimitive.ScrollDownButton
+    ref={ref}
+    className={cn(
+      "flex cursor-default items-center justify-center py-1",
+      className
+    )}
+    {...props}
+  >
+    <ChevronDown className="h-4 w-4" />
+  </SelectPrimitive.ScrollDownButton>
+));
+SelectScrollDownButton.displayName = SelectPrimitive.ScrollDownButton.displayName;
+
+const SelectContent = React.forwardRef<
+  React.ElementRef<typeof SelectPrimitive.Content>,
+  React.ComponentPropsWithoutRef<typeof SelectPrimitive.Content>
+>(({ className, children, position = "popper", ...props }, ref) => (
+  <SelectPrimitive.Portal>
+    <SelectPrimitive.Content
+      ref={ref}
+      className={cn(
+        "relative z-50 max-h-96 min-w-[8rem] overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-md data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
+        position === "popper" &&
+          "data-[side=bottom]:translate-y-1 data-[side=left]:-translate-x-1 data-[side=right]:translate-x-1 data-[side=top]:-translate-y-1",
+        className
+      )}
+      position={position}
+      {...props}
+    >
+      <SelectScrollUpButton />
+      <SelectPrimitive.Viewport
+        className={cn(
+          "p-1",
+          position === "popper" &&
+            "h-[var(--radix-select-trigger-height)] w-full min-w-[var(--radix-select-trigger-width)]"
+        )}
+      >
+        {children}
+      </SelectPrimitive.Viewport>
+      <SelectScrollDownButton />
+    </SelectPrimitive.Content>
+  </SelectPrimitive.Portal>
+));
+SelectContent.displayName = SelectPrimitive.Content.displayName;
+
+const SelectLabel = React.forwardRef<
+  React.ElementRef<typeof SelectPrimitive.Label>,
+  React.ComponentPropsWithoutRef<typeof SelectPrimitive.Label>
+>(({ className, ...props }, ref) => (
+  <SelectPrimitive.Label
+    ref={ref}
+    className={cn("py-1.5 pl-8 pr-2 text-sm font-semibold", className)}
+    {...props}
+  />
+));
+SelectLabel.displayName = SelectPrimitive.Label.displayName;
+
+const SelectItem = React.forwardRef<
+  React.ElementRef<typeof SelectPrimitive.Item>,
+  React.ComponentPropsWithoutRef<typeof SelectPrimitive.Item>
+>(({ className, children, ...props }, ref) => (
+  <SelectPrimitive.Item
+    ref={ref}
+    className={cn(
+      "relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+      className
+    )}
+    {...props}
+  >
+    <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
+      <SelectPrimitive.ItemIndicator>
+        <Check className="h-4 w-4" />
+      </SelectPrimitive.ItemIndicator>
+    </span>
+    <SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>
+  </SelectPrimitive.Item>
+));
+SelectItem.displayName = SelectPrimitive.Item.displayName;
+
+const SelectSeparator = React.forwardRef<
+  React.ElementRef<typeof SelectPrimitive.Separator>,
+  React.ComponentPropsWithoutRef<typeof SelectPrimitive.Separator>
+>(({ className, ...props }, ref) => (
+  <SelectPrimitive.Separator
+    ref={ref}
+    className={cn("-mx-1 my-1 h-px bg-muted", className)}
+    {...props}
+  />
+));
+SelectSeparator.displayName = SelectPrimitive.Separator.displayName;
+
+export {
+  Select,
+  SelectGroup,
+  SelectValue,
+  SelectTrigger,
+  SelectContent,
+  SelectLabel,
+  SelectItem,
+  SelectSeparator,
+  SelectScrollUpButton,
+  SelectScrollDownButton,
+};
+```
+
+
+## components\ui\separator.tsx
+
+```tsx
+"use client";
+
+import * as React from "react";
+import * as SeparatorPrimitive from "@radix-ui/react-separator";
+import { cn } from "@/utils/canvas";
+
+const Separator = React.forwardRef<
+  React.ElementRef<typeof SeparatorPrimitive.Root>,
+  React.ComponentPropsWithoutRef<typeof SeparatorPrimitive.Root>
+>(
+  (
+    { className, orientation = "horizontal", decorative = true, ...props },
+    ref
+  ) => (
+    <SeparatorPrimitive.Root
+      ref={ref}
+      decorative={decorative}
+      orientation={orientation}
+      className={cn(
+        "shrink-0 bg-border",
+        orientation === "horizontal" ? "h-[1px] w-full" : "h-full w-[1px]",
+        className
+      )}
+      {...props}
+    />
+  )
+);
+Separator.displayName = SeparatorPrimitive.Root.displayName;
+
+export { Separator };
+```
+
+
 ## components\ui\sonner.tsx
 
 ```tsx
@@ -13835,6 +14587,95 @@ const Toaster = ({ ...props }: ToasterProps) => {
 }
 
 export { Toaster }
+```
+
+
+## components\ui\tabs.tsx
+
+```tsx
+"use client";
+
+import * as React from "react";
+import * as TabsPrimitive from "@radix-ui/react-tabs";
+import { cn } from "@/utils/canvas";
+
+const Tabs = TabsPrimitive.Root;
+
+const TabsList = React.forwardRef<
+  React.ElementRef<typeof TabsPrimitive.List>,
+  React.ComponentPropsWithoutRef<typeof TabsPrimitive.List>
+>(({ className, ...props }, ref) => (
+  <TabsPrimitive.List
+    ref={ref}
+    className={cn(
+      "inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground",
+      className
+    )}
+    {...props}
+  />
+));
+TabsList.displayName = TabsPrimitive.List.displayName;
+
+const TabsTrigger = React.forwardRef<
+  React.ElementRef<typeof TabsPrimitive.Trigger>,
+  React.ComponentPropsWithoutRef<typeof TabsPrimitive.Trigger>
+>(({ className, ...props }, ref) => (
+  <TabsPrimitive.Trigger
+    ref={ref}
+    className={cn(
+      "inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm",
+      className
+    )}
+    {...props}
+  />
+));
+TabsTrigger.displayName = TabsPrimitive.Trigger.displayName;
+
+const TabsContent = React.forwardRef<
+  React.ElementRef<typeof TabsPrimitive.Content>,
+  React.ComponentPropsWithoutRef<typeof TabsPrimitive.Content>
+>(({ className, ...props }, ref) => (
+  <TabsPrimitive.Content
+    ref={ref}
+    className={cn(
+      "mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+      className
+    )}
+    {...props}
+  />
+));
+TabsContent.displayName = TabsPrimitive.Content.displayName;
+
+export { Tabs, TabsList, TabsTrigger, TabsContent };
+```
+
+
+## components\ui\textarea.tsx
+
+```tsx
+import * as React from "react";
+import { cn } from "@/utils/canvas";
+
+export interface TextareaProps
+  extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {}
+
+const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
+  ({ className, ...props }, ref) => {
+    return (
+      <textarea
+        className={cn(
+          "flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+          className
+        )}
+        ref={ref}
+        {...props}
+      />
+    );
+  }
+);
+Textarea.displayName = "Textarea";
+
+export { Textarea };
 ```
 
 
@@ -14096,27 +14937,68 @@ export const Loading = () => {
 ## components\NodeDetailsPanel.tsx
 
 ```tsx
+// components/NodeDetailsPanel.tsx
 "use client";
+
+import { nanoid } from 'nanoid';
 import { useEffect, useState } from "react";
 import { useNodeDetails } from "@/app/store/use-node-details";
 import useStore from "@/app/store/store";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Metrics } from "@/app/test/[boardId]/_components/metrics/metrics"; // пример
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Separator } from "@/components/ui/separator";
+import { PlusCircle, Trash2, GripVertical } from "lucide-react";
+import { cn } from "@/utils/canvas";
+
+// Типы для вероятностных эффектов
+interface ProbabilisticEffect {
+  id: string;
+  effect: string;
+  probability: number;
+}
+
+interface ConverterProbEffect {
+  id: string;
+  conversionIn: number;
+  conversionOut: number;
+  probability: number;
+}
 
 export const NodeDetailsPanel = () => {
+  const [convEffects, setConvEffects] = useState<ConverterProbEffect[]>([]);
+
   const { isOpen, nodeId, nodeType, closeDetails } = useNodeDetails();
-  const { nodes, updateNodeData } = useStore(); // предположим, есть функция updateNodeData
+  const { nodes, updateNodeData } = useStore();
   const [nodeData, setNodeData] = useState<any>(null);
+  const [probEffects, setProbEffects] = useState<ProbabilisticEffect[]>([]);
 
   useEffect(() => {
     if (nodeId) {
-      const node = nodes.find(n => n.id === nodeId);
-      setNodeData(node?.data);
+      const node = nodes.find((n) => n.id === nodeId);
+      setNodeData(node?.data || null);
+      // Инициализируем вероятностные эффекты из данных узла
+      if (node?.data?.probabilisticEffects) {
+        setProbEffects(node.data.probabilisticEffects);
+      } else {
+        setProbEffects([]);
+      }
+
+      // Для Converter
+      if (node?.data?.converterProbEffects) {
+        setConvEffects(node.data.converterProbEffects);
+      } else {
+        setConvEffects([]);
+      }
     }
   }, [nodeId, nodes]);
 
-  if (!isOpen || !nodeId) return null;
+  if (!isOpen || !nodeId || !nodeData) return null;
 
   const handleChange = (key: string, value: any) => {
     const updated = { ...nodeData, [key]: value };
@@ -14124,101 +15006,662 @@ export const NodeDetailsPanel = () => {
     updateNodeData(nodeId, updated);
   };
 
+  // ========== Массивы (states, events) ==========
+  const handleArrayAdd = (field: string) => {
+    const current = nodeData[field] || [];
+    handleChange(field, [...current, ""]);
+  };
+
+  const handleArrayRemove = (field: string, index: number) => {
+    const current = nodeData[field] || [];
+    handleChange(
+      field,
+      current.filter((_: any, i: number) => i !== index)
+    );
+  };
+
+  const handleArrayChange = (field: string, index: number, value: string) => {
+    const current = nodeData[field] || [];
+    const newArray = [...current];
+    newArray[index] = value;
+    handleChange(field, newArray);
+  };
+
+  // ========== Вероятностные эффекты ==========
+  const handleProbEffectChange = (id: string, field: keyof ProbabilisticEffect, value: any) => {
+    const newEffects = probEffects.map((eff) =>
+      eff.id === id ? { ...eff, [field]: value } : eff
+    );
+    setProbEffects(newEffects);
+    handleChange("probabilisticEffects", newEffects);
+  };
+
+  const addProbEffect = () => {
+    const newEffect: ProbabilisticEffect = {
+      id: crypto.randomUUID(),
+      effect: "",
+      probability: 0.5,
+    };
+    const newEffects = [...probEffects, newEffect];
+    setProbEffects(newEffects);
+    handleChange("probabilisticEffects", newEffects);
+  };
+
+  const removeProbEffect = (id: string) => {
+    const newEffects = probEffects.filter((eff) => eff.id !== id);
+    setProbEffects(newEffects);
+    handleChange("probabilisticEffects", newEffects);
+  };
+
+  // ========== Converter эффекты ==========
+
+  const handleConvEffectChange = (id: string, field: keyof ConverterProbEffect, value: any) => {
+  const newEffects = convEffects.map((eff) =>
+    eff.id === id ? { ...eff, [field]: value } : eff
+  );
+  setConvEffects(newEffects);
+  handleChange("converterProbEffects", newEffects);
+  };
+
+  const addConvEffect = () => {
+    const newEffect: ConverterProbEffect = {
+      id: nanoid(),
+      conversionIn: 1,
+      conversionOut: 1,
+      probability: 0.5,
+    };
+    const newEffects = [...convEffects, newEffect];
+    setConvEffects(newEffects);
+    handleChange("converterProbEffects", newEffects);
+  };
+
+  const removeConvEffect = (id: string) => {
+    const newEffects = convEffects.filter((eff) => eff.id !== id);
+    setConvEffects(newEffects);
+    handleChange("converterProbEffects", newEffects);
+  };
+
+  // ========== Перечисления (enum) ==========
+  const handleEnumAdd = () => {
+    const current = nodeData.enumValues || [];
+    handleChange("enumValues", [...current, ""]);
+  };
+
+  const handleEnumRemove = (index: number) => {
+    const current = nodeData.enumValues || [];
+    handleChange(
+      "enumValues",
+      current.filter((_: any, i: number) => i !== index)
+    );
+  };
+
+  const handleEnumChange = (index: number, value: string) => {
+    const current = nodeData.enumValues || [];
+    const newArray = [...current];
+    newArray[index] = value;
+    handleChange("enumValues", newArray);
+  };
+
+  // ========== Рендер полей по типу ==========
+
   const renderEntityFields = () => (
-    <>
-      <label>Name:</label>
-      <Input value={nodeData?.name || ''} onChange={(e) => handleChange('name', e.target.value)} />
-      <label>States (comma separated):</label>
-      <Input value={nodeData?.states?.join(', ') || ''} onChange={(e) => handleChange('states', e.target.value.split(',').map(s => s.trim()))} />
-      <label>Events:</label>
-      <Input value={nodeData?.events?.join(', ') || ''} onChange={(e) => handleChange('events', e.target.value.split(',').map(s => s.trim()))} />
-    </>
+    <div className="space-y-6">
+      <div className="space-y-2">
+        <Label htmlFor="name">Name</Label>
+        <Input id="name" value={nodeData.name || ""} onChange={(e) => handleChange("name", e.target.value)} />
+      </div>
+
+      {/* States */}
+      <div className="space-y-3">
+        <div className="flex justify-between items-center">
+          <Label>States</Label>
+          <Button variant="outline" size="sm" onClick={() => handleArrayAdd("states")}>
+            <PlusCircle className="h-4 w-4 mr-2" />
+            Add State
+          </Button>
+        </div>
+        {(nodeData.states || []).map((state: string, index: number) => (
+          <div key={index} className="flex items-center gap-2">
+            <GripVertical className="h-4 w-4 text-gray-400 cursor-move" />
+            <Input
+              value={state}
+              onChange={(e) => handleArrayChange("states", index, e.target.value)}
+              placeholder={`State ${index + 1}`}
+              className="flex-1"
+            />
+            <Button variant="ghost" size="icon" onClick={() => handleArrayRemove("states", index)}>
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
+        ))}
+      </div>
+
+      {/* Events */}
+      <div className="space-y-3">
+        <div className="flex justify-between items-center">
+          <Label>Events</Label>
+          <Button variant="outline" size="sm" onClick={() => handleArrayAdd("events")}>
+            <PlusCircle className="h-4 w-4 mr-2" />
+            Add Event
+          </Button>
+        </div>
+        {(nodeData.events || []).map((event: string, index: number) => (
+          <div key={index} className="flex items-center gap-2">
+            <GripVertical className="h-4 w-4 text-gray-400 cursor-move" />
+            <Input
+              value={event}
+              onChange={(e) => handleArrayChange("events", index, e.target.value)}
+              placeholder={`Event ${index + 1}`}
+              className="flex-1"
+            />
+            <Button variant="ghost" size="icon" onClick={() => handleArrayRemove("events", index)}>
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 
   const renderStateFields = () => (
-    <>
-      <label>Name:</label>
-      <Input value={nodeData?.name || ''} onChange={(e) => handleChange('name', e.target.value)} />
-      <label>Value Type:</label>
-      <select value={nodeData?.valueType} onChange={(e) => handleChange('valueType', e.target.value)}>
-        <option value="int">Int</option>
-        <option value="enum">Enum</option>
-        <option value="list">List</option>
-      </select>
-      {nodeData?.valueType === 'int' && (
-        <>
-          <label>Min:</label>
-          <Input type="number" value={nodeData?.range?.[0] || 0} onChange={(e) => handleChange('range', [parseInt(e.target.value), nodeData?.range?.[1]])} />
-          <label>Max:</label>
-          <Input type="number" value={nodeData?.range?.[1] || 100} onChange={(e) => handleChange('range', [nodeData?.range?.[0], parseInt(e.target.value)])} />
-        </>
+    <div className="space-y-6">
+      <div className="space-y-2">
+        <Label htmlFor="name">Name</Label>
+        <Input id="name" value={nodeData.name || ""} onChange={(e) => handleChange("name", e.target.value)} />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="valueType">Value Type</Label>
+        <Select value={nodeData.valueType} onValueChange={(v) => handleChange("valueType", v)}>
+          <SelectTrigger>
+            <SelectValue placeholder="Select type" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="int">Integer</SelectItem>
+            <SelectItem value="enum">Enumeration</SelectItem>
+            <SelectItem value="list">List</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {nodeData.valueType === "int" && (
+        <div className="grid grid-cols-2 gap-2">
+          <div className="space-y-2">
+            <Label htmlFor="min">Min</Label>
+            <Input
+              id="min"
+              type="number"
+              value={nodeData.range?.[0] || 0}
+              onChange={(e) => handleChange("range", [parseInt(e.target.value), nodeData.range?.[1]])}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="max">Max</Label>
+            <Input
+              id="max"
+              type="number"
+              value={nodeData.range?.[1] || 100}
+              onChange={(e) => handleChange("range", [nodeData.range?.[0], parseInt(e.target.value)])}
+            />
+          </div>
+        </div>
       )}
-      {nodeData?.valueType === 'enum' && (
-        <>
-          <label>Enum values (comma):</label>
-          <Input value={nodeData?.enumValues?.join(', ') || ''} onChange={(e) => handleChange('enumValues', e.target.value.split(',').map(s => s.trim()))} />
-        </>
+
+      {nodeData.valueType === "enum" && (
+        <div className="space-y-3">
+          <div className="flex justify-between items-center">
+            <Label>Enum Values</Label>
+            <Button variant="outline" size="sm" onClick={handleEnumAdd}>
+              <PlusCircle className="h-4 w-4 mr-2" />
+              Add Value
+            </Button>
+          </div>
+          {(nodeData.enumValues || []).map((value: string, index: number) => (
+            <div key={index} className="flex items-center gap-2">
+              <GripVertical className="h-4 w-4 text-gray-400 cursor-move" />
+              <Input
+                value={value}
+                onChange={(e) => handleEnumChange(index, e.target.value)}
+                placeholder={`Value ${index + 1}`}
+                className="flex-1"
+              />
+              <Button variant="ghost" size="icon" onClick={() => handleEnumRemove(index)}>
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
+          ))}
+        </div>
       )}
-    </>
+    </div>
   );
 
   const renderEventFields = () => (
-    <>
-      <label>Name:</label>
-      <Input value={nodeData?.name || ''} onChange={(e) => handleChange('name', e.target.value)} />
-      <label>Requires:</label>
-      <Input value={nodeData?.requires || ''} onChange={(e) => handleChange('requires', e.target.value)} />
-      <label>Effect:</label>
-      <Input value={nodeData?.effect || ''} onChange={(e) => handleChange('effect', e.target.value)} />
-      <label>Probability (0-1):</label>
-      <Input type="number" min="0" max="1" step="0.1" value={nodeData?.probability || 0.5} onChange={(e) => handleChange('probability', parseFloat(e.target.value))} />
-    </>
+    <Tabs defaultValue="main" className="w-full">
+      <TabsList className="grid grid-cols-3">
+        <TabsTrigger value="main">Main</TabsTrigger>
+        <TabsTrigger value="probabilistic">Probabilities</TabsTrigger>
+        <TabsTrigger value="advanced">Advanced</TabsTrigger>
+      </TabsList>
+
+      <TabsContent value="main" className="space-y-4 mt-4">
+        <div className="space-y-2">
+          <Label htmlFor="name">Name</Label>
+          <Input id="name" value={nodeData.name || ""} onChange={(e) => handleChange("name", e.target.value)} />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="requires">Requires (condition)</Label>
+          <Textarea
+            id="requires"
+            value={nodeData.requires || ""}
+            onChange={(e) => handleChange("requires", e.target.value)}
+            placeholder="e.g., Player.Mana >= 1"
+            className="font-mono text-sm"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="effect">Default Effect</Label>
+          <Textarea
+            id="effect"
+            value={nodeData.effect || ""}
+            onChange={(e) => handleChange("effect", e.target.value)}
+            placeholder="e.g., Target.Health -= Self.Attack"
+            className="font-mono text-sm"
+          />
+        </div>
+      </TabsContent>
+
+      <TabsContent value="probabilistic" className="space-y-4 mt-4">
+        <div className="flex justify-between items-center">
+          <Label>Probabilistic Effects</Label>
+          <Button variant="outline" size="sm" onClick={addProbEffect}>
+            <PlusCircle className="h-4 w-4 mr-2" />
+            Add Effect
+          </Button>
+        </div>
+        {probEffects.map((eff, index) => (
+          <Card key={eff.id} className="relative">
+            <CardHeader className="p-3 flex flex-row items-center justify-between">
+              <CardTitle className="text-sm">Effect #{index + 1}</CardTitle>
+              <Button variant="ghost" size="icon" onClick={() => removeProbEffect(eff.id)}>
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </CardHeader>
+            <CardContent className="p-3 pt-0 space-y-2">
+              <div className="space-y-1">
+                <Label className="text-xs">Effect</Label>
+                <Textarea
+                  value={eff.effect}
+                  onChange={(e) => handleProbEffectChange(eff.id, "effect", e.target.value)}
+                  placeholder="e.g., Self.Health -= Target.Attack"
+                  className="font-mono text-xs"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Probability (0-1)</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  max="1"
+                  step="0.1"
+                  value={eff.probability}
+                  onChange={(e) => handleProbEffectChange(eff.id, "probability", parseFloat(e.target.value))}
+                />
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </TabsContent>
+
+      <TabsContent value="advanced" className="space-y-4 mt-4">
+        <div className="space-y-2">
+          <Label htmlFor="cooldown">Cooldown (turns)</Label>
+          <Input
+            id="cooldown"
+            type="number"
+            min="0"
+            value={nodeData.cooldown || 0}
+            onChange={(e) => handleChange("cooldown", parseInt(e.target.value))}
+          />
+        </div>
+        {/* Можно добавить другие поля */}
+      </TabsContent>
+    </Tabs>
   );
 
   const renderRuleFields = () => (
-    <>
-      <label>Name:</label>
-      <Input value={nodeData?.name || ''} onChange={(e) => handleChange('name', e.target.value)} />
-      <label>When:</label>
-      <Input value={nodeData?.when || ''} onChange={(e) => handleChange('when', e.target.value)} />
-      <label>Effect:</label>
-      <Input value={nodeData?.effect || ''} onChange={(e) => handleChange('effect', e.target.value)} />
-    </>
+    <div className="space-y-6">
+      <div className="space-y-2">
+        <Label htmlFor="name">Name</Label>
+        <Input id="name" value={nodeData.name || ""} onChange={(e) => handleChange("name", e.target.value)} />
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="when">When (condition)</Label>
+        <Textarea
+          id="when"
+          value={nodeData.when || ""}
+          onChange={(e) => handleChange("when", e.target.value)}
+          placeholder="e.g., Attacker.Element = Fire and Target.Element = Air"
+          className="font-mono text-sm"
+        />
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="effect">Effect</Label>
+        <Textarea
+          id="effect"
+          value={nodeData.effect || ""}
+          onChange={(e) => handleChange("effect", e.target.value)}
+          placeholder="e.g., Attacker.Attack *= 1.5"
+          className="font-mono text-sm"
+        />
+      </div>
+    </div>
   );
 
   const renderOperatorFields = () => (
-    <>
-      <label>Operator:</label>
-      <select value={nodeData?.operator || 'X'} onChange={(e) => handleChange('operator', e.target.value)}>
-        <option value="X">X (Next)</option>
-        <option value="F">F (Future)</option>
-        <option value="G">G (Globally)</option>
-        <option value="U">U (Until)</option>
-      </select>
-    </>
+    <div className="space-y-6">
+      <div className="space-y-2">
+        <Label htmlFor="operator">Operator</Label>
+        <Select value={nodeData.operator || "X"} onValueChange={(v) => handleChange("operator", v)}>
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="X">X (Next)</SelectItem>
+            <SelectItem value="F">F (Future)</SelectItem>
+            <SelectItem value="G">G (Globally)</SelectItem>
+            <SelectItem value="U">U (Until)</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      {/* При необходимости добавить поля для аргументов */}
+    </div>
   );
+
+const renderSourceFields = () => (
+  <Tabs defaultValue="main" className="w-full">
+    <TabsList className="grid grid-cols-2">
+      <TabsTrigger value="main">Main</TabsTrigger>
+      <TabsTrigger value="distribution">Distribution</TabsTrigger>
+    </TabsList>
+    <TabsContent value="main" className="space-y-4 mt-4">
+      <div className="space-y-2">
+        <Label htmlFor="name">Name</Label>
+        <Input id="name" value={nodeData.name || ""} onChange={(e) => handleChange("name", e.target.value)} />
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="generationRate">Generation Rate</Label>
+        <Input id="generationRate" type="number" value={nodeData.generationRate ?? 1} onChange={(e) => handleChange("generationRate", parseInt(e.target.value))} />
+      </div>
+    </TabsContent>
+    <TabsContent value="distribution" className="space-y-4 mt-4">
+      <div className="space-y-2">
+        <Label htmlFor="distributionType">Distribution Type</Label>
+        <Select value={nodeData.distributionType || "deterministic"} onValueChange={(v) => handleChange("distributionType", v)}>
+          <SelectTrigger>
+            <SelectValue placeholder="Select type" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="deterministic">Deterministic</SelectItem>
+            <SelectItem value="normal">Normal</SelectItem>
+            <SelectItem value="exponential">Exponential</SelectItem>
+            <SelectItem value="temporal">Temporal</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      {nodeData.distributionType === "normal" && (
+        <div className="grid grid-cols-2 gap-2">
+          <div className="space-y-2">
+            <Label htmlFor="mean">Mean</Label>
+            <Input id="mean" type="number" value={nodeData.mean ?? 0} onChange={(e) => handleChange("mean", parseFloat(e.target.value))} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="stddev">Std Dev</Label>
+            <Input id="stddev" type="number" value={nodeData.stddev ?? 1} onChange={(e) => handleChange("stddev", parseFloat(e.target.value))} />
+          </div>
+        </div>
+      )}
+      {nodeData.distributionType === "exponential" && (
+        <div className="space-y-2">
+          <Label htmlFor="rate">Rate</Label>
+          <Input id="rate" type="number" value={nodeData.rate ?? 1} onChange={(e) => handleChange("rate", parseFloat(e.target.value))} />
+        </div>
+      )}
+      {nodeData.distributionType === "temporal" && (
+        <>
+          <div className="space-y-2">
+            <Label htmlFor="startTurn">Start Turn</Label>
+            <Input id="startTurn" type="number" value={nodeData.startTurn ?? 1} onChange={(e) => handleChange("startTurn", parseInt(e.target.value))} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="interval">Interval (turns)</Label>
+            <Input id="interval" type="number" value={nodeData.interval ?? 1} onChange={(e) => handleChange("interval", parseInt(e.target.value))} />
+          </div>
+        </>
+      )}
+    </TabsContent>
+  </Tabs>
+);
+
+const renderPoolFields = () => (
+  <div className="space-y-6">
+    <div className="space-y-2">
+      <Label htmlFor="name">Name</Label>
+      <Input id="name" value={nodeData.name || ""} onChange={(e) => handleChange("name", e.target.value)} />
+    </div>
+    <div className="space-y-2">
+      <Label htmlFor="resourceType">Resource Type</Label>
+      <Input id="resourceType" value={nodeData.resourceType || ""} onChange={(e) => handleChange("resourceType", e.target.value)} />
+    </div>
+    <div className="grid grid-cols-2 gap-2">
+      <div className="space-y-2">
+        <Label htmlFor="min">Min</Label>
+        <Input id="min" type="number" value={nodeData.min ?? 0} onChange={(e) => handleChange("min", parseInt(e.target.value))} />
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="max">Max</Label>
+        <Input id="max" type="number" value={nodeData.max ?? 100} onChange={(e) => handleChange("max", parseInt(e.target.value))} />
+      </div>
+    </div>
+    <div className="space-y-2">
+      <Label htmlFor="initialValue">Initial Value</Label>
+      <Input id="initialValue" type="number" value={nodeData.initialValue ?? 0} onChange={(e) => handleChange("initialValue", parseInt(e.target.value))} />
+    </div>
+  </div>
+);
+
+const renderConsumerFields = () => (
+  <div className="space-y-6">
+    <div className="space-y-2">
+      <Label htmlFor="name">Name</Label>
+      <Input id="name" value={nodeData.name || ""} onChange={(e) => handleChange("name", e.target.value)} />
+    </div>
+    <div className="space-y-2">
+      <Label htmlFor="consumptionAmount">Consumption Amount</Label>
+      <Input id="consumptionAmount" type="number" value={nodeData.consumptionAmount ?? 1} onChange={(e) => handleChange("consumptionAmount", parseInt(e.target.value))} />
+      <p className="text-xs text-gray-500">Amount consumed per activation. If not specified, uses edge value.</p>
+    </div>
+  </div>
+);
+
+const renderConverterFields = () => (
+  <Tabs defaultValue="main" className="w-full">
+    <TabsList className="grid grid-cols-2">
+      <TabsTrigger value="main">Main</TabsTrigger>
+      <TabsTrigger value="probabilistic">Probabilities</TabsTrigger>
+    </TabsList>
+    <TabsContent value="main" className="space-y-4 mt-4">
+      <div className="space-y-2">
+        <Label htmlFor="name">Name</Label>
+        <Input id="name" value={nodeData.name || ""} onChange={(e) => handleChange("name", e.target.value)} />
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="conversionRatio">Default Ratio (in:out)</Label>
+        <div className="flex gap-2">
+          <Input type="number" value={nodeData.conversionIn ?? 1} onChange={(e) => handleChange("conversionIn", parseInt(e.target.value))} className="w-20" />
+          <span>:</span>
+          <Input type="number" value={nodeData.conversionOut ?? 1} onChange={(e) => handleChange("conversionOut", parseInt(e.target.value))} className="w-20" />
+        </div>
+      </div>
+    </TabsContent>
+    <TabsContent value="probabilistic" className="space-y-4 mt-4">
+      <div className="flex justify-between items-center">
+        <Label>Probabilistic Effects</Label>
+        <Button variant="outline" size="sm" onClick={addConvEffect}>
+          <PlusCircle className="h-4 w-4 mr-2" />
+          Add Effect
+        </Button>
+      </div>
+      {convEffects.map((eff, index) => (
+        <Card key={eff.id} className="relative">
+          <CardHeader className="p-3 flex flex-row items-center justify-between">
+            <CardTitle className="text-sm">Effect #{index + 1}</CardTitle>
+            <Button variant="ghost" size="icon" onClick={() => removeConvEffect(eff.id)}>
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </CardHeader>
+          <CardContent className="p-3 pt-0 space-y-2">
+            <div className="space-y-1">
+              <Label className="text-xs">Conversion (in:out)</Label>
+              <div className="flex gap-2">
+                <Input
+                  type="number"
+                  value={eff.conversionIn}
+                  onChange={(e) => handleConvEffectChange(eff.id, "conversionIn", parseInt(e.target.value))}
+                  className="w-20"
+                />
+                <span>:</span>
+                <Input
+                  type="number"
+                  value={eff.conversionOut}
+                  onChange={(e) => handleConvEffectChange(eff.id, "conversionOut", parseInt(e.target.value))}
+                  className="w-20"
+                />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Probability (0-1)</Label>
+              <Input
+                type="number"
+                min="0"
+                max="1"
+                step="0.1"
+                value={eff.probability}
+                onChange={(e) => handleConvEffectChange(eff.id, "probability", parseFloat(e.target.value))}
+              />
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+    </TabsContent>
+  </Tabs>
+);
+
+const renderGateFields = () => (
+  <div className="space-y-6">
+    <div className="space-y-2">
+      <Label htmlFor="name">Name</Label>
+      <Input id="name" value={nodeData.name || ""} onChange={(e) => handleChange("name", e.target.value)} />
+    </div>
+    <div className="space-y-2">
+      <Label htmlFor="gateType">Routing Type</Label>
+      <Select value={nodeData.gateType || "probabilistic"} onValueChange={(v) => handleChange("gateType", v)}>
+        <SelectTrigger>
+          <SelectValue placeholder="Select type" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="probabilistic">Probabilistic</SelectItem>
+          <SelectItem value="conditional">Conditional</SelectItem>
+        </SelectContent>
+      </Select>
+    </div>
+  </div>
+);
+
+const renderDelayFields = () => (
+  <div className="space-y-6">
+    <div className="space-y-2">
+      <Label htmlFor="name">Name</Label>
+      <Input id="name" value={nodeData.name || ""} onChange={(e) => handleChange("name", e.target.value)} />
+    </div>
+    <div className="space-y-2">
+      <Label htmlFor="delaySteps">Delay Steps</Label>
+      <Input id="delaySteps" type="number" min="0" value={nodeData.delaySteps ?? 1} onChange={(e) => handleChange("delaySteps", parseInt(e.target.value))} />
+    </div>
+  </div>
+);
+
+const renderEndFields = () => (
+  <div className="space-y-6">
+    <div className="space-y-2">
+      <Label htmlFor="name">Name</Label>
+      <Input id="name" value={nodeData.name || ""} onChange={(e) => handleChange("name", e.target.value)} />
+    </div>
+    <div className="space-y-2">
+      <Label htmlFor="endType">End Condition Type</Label>
+      <Select value={nodeData.endType || "win"} onValueChange={(v) => handleChange("endType", v)}>
+        <SelectTrigger>
+          <SelectValue placeholder="Select type" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="win">Win</SelectItem>
+          <SelectItem value="lose">Lose</SelectItem>
+          <SelectItem value="draw">Draw</SelectItem>
+        </SelectContent>
+      </Select>
+    </div>
+  </div>
+);
+
+const renderTriggerFields = () => (
+  <div className="space-y-6">
+    <div className="space-y-2">
+      <Label htmlFor="name">Name</Label>
+      <Input id="name" value={nodeData.name || ""} onChange={(e) => handleChange("name", e.target.value)} />
+    </div>
+    <div className="space-y-2">
+      <Label htmlFor="triggerEvent">Trigger Event</Label>
+      <Input id="triggerEvent" value={nodeData.triggerEvent || ""} onChange={(e) => handleChange("triggerEvent", e.target.value)} />
+      <p className="text-xs text-gray-500">Name of the event that triggers this node.</p>
+    </div>
+  </div>
+);
 
   return (
     <div className="absolute top-20 right-4 w-96 bg-white rounded-lg shadow-xl p-4 z-50 border max-h-[80vh] overflow-y-auto">
       <div className="flex justify-between items-center mb-4">
-        <h3 className="font-bold text-lg">Node Details: {nodeType}</h3>
-        <button onClick={closeDetails} className="text-gray-500 hover:text-gray-700">✖</button>
+        <h3 className="font-bold text-lg capitalize">{nodeType} Properties</h3>
+        <button onClick={closeDetails} className="text-gray-500 hover:text-gray-700">
+          ✖
+        </button>
       </div>
-      <div className="space-y-3">
-        {nodeType === 'entity' && renderEntityFields()}
-        {nodeType === 'state' && renderStateFields()}
-        {nodeType === 'event' && renderEventFields()}
-        {nodeType === 'rule' && renderRuleFields()}
-        {nodeType === 'operator' && renderOperatorFields()}
-      </div>
-      <div className="mt-6">
-        <h4 className="font-semibold mb-2">Analytics</h4>
-        {/* Здесь можно встроить существующие компоненты аналитики, например Metrics или упрощённый вариант */}
-        <div className="bg-gray-50 p-2 rounded">
-          <p className="text-sm text-gray-600">Simulation data will appear here.</p>
-          {/* Пример: <Metrics nodeId={nodeId} /> */}
+      <ScrollArea className="h-[calc(80vh-8rem)] pr-4">
+        <div className="space-y-6">
+          {nodeType === "entity" && renderEntityFields()}
+          {nodeType === "state" && renderStateFields()}
+          {nodeType === "event" && renderEventFields()}
+          {nodeType === "rule" && renderRuleFields()}
+          {nodeType === "operator" && renderOperatorFields()}
+
+          {nodeType === "source" && renderSourceFields()}
+          {nodeType === "pool" && renderPoolFields()}
+          {nodeType === "consumer" && renderConsumerFields()}
+          {nodeType === "converter" && renderConverterFields()}
+          {nodeType === "gate" && renderGateFields()}
+          {nodeType === "delay" && renderDelayFields()}
+          {nodeType === "end" && renderEndFields()}
+          {nodeType === "trigger" && renderTriggerFields()}
+
+          <Separator />
+
+          {/* Блок аналитики (можно оставить) */}
+          <div>
+            <h4 className="font-semibold mb-2">Analytics</h4>
+            <div className="bg-gray-50 p-2 rounded text-sm text-gray-600">
+              Simulation data will appear here.
+            </div>
+          </div>
         </div>
-      </div>
+      </ScrollArea>
     </div>
   );
 };
@@ -16602,6 +18045,11 @@ next-env.d.ts
   }
 }
 ```
+
+
+## export.md
+
+File is too large to process (1519362 bytes)
 
 
 ## liveblocks.config.ts

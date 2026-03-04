@@ -11,7 +11,7 @@ import {
 } from "reactflow";
 import useStore from "@/app/store/store";
 import { StructType } from "@/app/types/structs";
-import { StyledNode } from "./styled-node";
+import { StyledNode } from "../styled-node";
 
 interface DataProps {
   data: {

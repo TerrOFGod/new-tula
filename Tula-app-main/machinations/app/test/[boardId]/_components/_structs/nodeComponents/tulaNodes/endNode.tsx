@@ -11,20 +11,27 @@ import {
 } from "reactflow";
 import useStore from "@/app/store/store";
 import { StructType } from "@/app/types/structs";
-import { StyledNode } from "./styled-node";
+import { StyledNode } from "../styled-node";
+import { useNodeDetails } from "@/app/store/use-node-details";
 
 interface DataProps {
   data: {
     label: string;
     struct: StructType;
     name?: string;
+    endType?: string;
   };
   selected: boolean;
+  id: string;
 }
 
-const DelayNode = ({ data: { label, struct, name }, selected }: DataProps) => {
+const EndNode = ({ id, data, selected }: DataProps) => {
+  const { struct, label, name, endType } = data;
+  const info = endType ? `end:${endType}` : '';
+
   const { isPlay, onStop, onReset, time } = useAnimateScheme();
   const { setNodeLabel, getEdgeValues } = useStore();
+  const { openDetails } = useNodeDetails();
   const nodeId = useNodeId();
   const edges = useEdges<any>();
   const nodes = useNodes<any>();
@@ -59,15 +66,17 @@ const DelayNode = ({ data: { label, struct, name }, selected }: DataProps) => {
 
   return (
     <>
-      <NodeResizer
-        color="blue"
-        isVisible={selected}
-        minWidth={45}
-        minHeight={45}
-      />
-      <StyledNode struct={struct} label={label} name={name} />
+      <div onDoubleClick={() => openDetails(id, 'end')}>
+        <NodeResizer
+          color="blue"
+          isVisible={selected}
+          minWidth={45}
+          minHeight={45}
+        />
+        <StyledNode struct={struct} label={label} name={name} info={info} />
+      </div>
     </>
   );
 };
 
-export default memo(DelayNode);
+export default memo(EndNode);
