@@ -15,7 +15,7 @@ import { liveblocks } from "@liveblocks/zustand";
 import type { WithLiveblocks } from "@liveblocks/zustand";
 import { nanoid } from "nanoid/non-secure";
 
-import { EdgesTypes, Graph, StructType } from "../types/structs";
+import { ConnectionType, EdgesTypes, Graph, StructType } from "../types/structs";
 import { markerEnd } from "@/utils/canvas";
 import { client } from "@/liveblocks.config";
 import {
@@ -43,7 +43,7 @@ export type RFState = {
   onRestoreVersion: (stateData: BoardStateData) => void;
   onDeleteVersion: (stateData: BoardStateData) => void;
   setSavingStatus: (savingStatus: BoardSavingStatus) => void;
-  addNode: (struct: StructType) => void;
+  addNode: (struct: StructType, position?: { x: number; y: number }) => void;
   deleteNode: (id: string) => void;
   onNodesChange: OnNodesChange;
   setNodeName: (id: string, name: string) => void;
@@ -52,6 +52,7 @@ export type RFState = {
   onEdgesChange: OnEdgesChange;
   getEdgeTargetNode: (id: string) => void;
   setEdgeType: (type: 'custom' | 'probabilistic' | 'conditional' | 'trigger' | 'modifier') => void;
+  setEdgeConnectionType: (id: string, connectionType: ConnectionType) => void; // новая функция
   setEdgeData: (id: string, data: number) => void;
   setEdgeAnimated: (isPlay: boolean) => void;
   onConnect: (connection: any) => void;
@@ -163,24 +164,39 @@ const useStore = createWithEqualityFn<WithLiveblocks<RFState>>()(
 
         switch (edgeType) {
           case 'probabilistic':
-            newEdge = { ...baseEdge, data: { probability: 0.5 } };
+            newEdge = { ...baseEdge, data: { probability: 0.5, connectionType: ConnectionType.RESOURCE } };
             break;
           case 'conditional':
-            newEdge = { ...baseEdge, data: { condition: '' } };
+            newEdge = { ...baseEdge, data: { condition: '', connectionType: ConnectionType.RESOURCE } };
             break;
           case 'trigger':
-            newEdge = { ...baseEdge, data: { eventName: '' } };
+            newEdge = { ...baseEdge, data: { eventName: '', connectionType: ConnectionType.RESOURCE } };
             break;
           case 'modifier':
-            newEdge = { ...baseEdge, data: { expression: '' } };
+            newEdge = { ...baseEdge, data: { expression: '', connectionType: ConnectionType.RESOURCE } };
             break;
           default: // custom
-            newEdge = { ...baseEdge, data: 1 };
+            newEdge = { ...baseEdge, data: { value: 1, connectionType: ConnectionType.RESOURCE } };
         }
 
         set({
           edges: addEdge(newEdge, get().edges),
         });
+      },
+      setEdgeConnectionType: (id: string, connectionType: ConnectionType) => {
+        set((state) => ({
+          edges: state.edges.map((edge) =>
+            edge.id === id
+              ? {
+                ...edge,
+                data: {
+                  ...(edge.data as any),
+                  connectionType,
+                },
+              }
+            : edge
+          ),
+        }));
       },
       setEdgeData: (id: string, data: number) => {
         const edges = useStore.getState().edges;
@@ -292,15 +308,12 @@ const useStore = createWithEqualityFn<WithLiveblocks<RFState>>()(
         }
       },
 
-      addNode: (struct: StructType) => {
+      addNode: (struct: StructType, position?: { x: number; y: number }) => {
         let newNode;
 
         const baseNode = {
           id: nanoid(),
-          position: {
-            x: (Math.random() * window.innerWidth) / 2,
-            y: (Math.random() * window.innerHeight) / 2,
-          },
+          position: position || { x: 0, y: 0 }, // если позиция не передана, ставим в (0,0) – потом обновим
         };
 
         switch (struct) {

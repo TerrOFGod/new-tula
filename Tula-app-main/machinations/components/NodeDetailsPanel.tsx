@@ -449,10 +449,28 @@ const renderSourceFields = () => (
         <Label htmlFor="name">Name</Label>
         <Input id="name" value={nodeData.name || ""} onChange={(e) => handleChange("name", e.target.value)} />
       </div>
-      <div className="space-y-2">
-        <Label htmlFor="generationRate">Generation Rate</Label>
-        <Input id="generationRate" type="number" value={nodeData.generationRate ?? 1} onChange={(e) => handleChange("generationRate", parseInt(e.target.value))} />
-      </div>
+      <Label htmlFor="rateType">Rate Type</Label>
+      <Select value={nodeData.rateType || "numeric"} onValueChange={(v) => handleChange("rateType", v)}>
+        <SelectTrigger>
+          <SelectValue placeholder="Select type" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="numeric">Numeric</SelectItem>
+          <SelectItem value="parametric">Parametric</SelectItem>
+        </SelectContent>
+      </Select>
+      {nodeData.rateType === "numeric" && (
+        <div className="space-y-2">
+          <Label htmlFor="generationRate">Generation Rate</Label>
+          <Input id="generationRate" type="number" value={nodeData.generationRate ?? 1} onChange={(e) => handleChange("generationRate", parseInt(e.target.value))} />
+        </div>
+      )}
+      {nodeData.rateType === "parametric" && (
+        <div className="space-y-2">
+          <Label htmlFor="parameterRate">Parameter</Label>
+          <Textarea id="parameterRate" value={nodeData.parameterRate || ""} onChange={(e) => handleChange("parameterRate", e.target.value)} />
+        </div>
+      )}
     </TabsContent>
     <TabsContent value="distribution" className="space-y-4 mt-4">
       <div className="space-y-2">

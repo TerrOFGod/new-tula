@@ -19,6 +19,7 @@ interface DataProps {
     label: string;
     struct: StructType;
     name?: string;
+    consumptionAmount?: number;
   };
   selected: boolean;
   id: string;
@@ -26,15 +27,18 @@ interface DataProps {
 
 const ConsumerNode = ({
   id,
-  data: { label, struct, name, },
+  data,
   selected,
 }: DataProps) => {
+  const { label, struct, name, consumptionAmount} = data;
   const { isPlay, onStop, onReset, time } = useAnimateScheme();
   const { setNodeLabel, getEdgeValues } = useStore();
   const { openDetails } = useNodeDetails();
   const nodeId = useNodeId();
   const edges = useEdges<any>();
   const nodes = useNodes<any>();
+
+  const info = (consumptionAmount) ? `-${consumptionAmount}` : '';
 
   useEffect(() => {
     let intervalId = null;
@@ -78,7 +82,7 @@ const ConsumerNode = ({
           minWidth={45}
           minHeight={45}
         />
-        <StyledNode struct={struct} label={label} name={name} />
+        <StyledNode struct={struct} label={label} name={name} info={info} />
       </div>
     </>
   );

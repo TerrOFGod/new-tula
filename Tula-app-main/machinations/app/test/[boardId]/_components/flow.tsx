@@ -1,6 +1,6 @@
 "use client";
 import "reactflow/dist/style.css";
-import ReactFlow, { Controls, Background, Panel } from "reactflow";
+import ReactFlow, { Controls, Background, Panel, Edge, ReactFlowProvider, useReactFlow } from "reactflow";
 // import { shallow } from "zustand/shallow";
 import { useMyPresence, useOthers } from "@/liveblocks.config";
 import { Cursor } from "./cursor";
@@ -8,7 +8,7 @@ import { Toolbar } from "./panels/toolbar";
 import { BottomPanel } from "./panels/bottom-panel";
 import { DownloadBtn } from "./ui/DownloadBtn";
 import useStore, { RFState } from "@/app/store/store";
-import { edgeTypes, nodeTypes } from "@/app/types/structs";
+import { edgeTypes, nodeTypes, StructType } from "@/app/types/structs";
 import { useCallback, useEffect, useRef, useState } from "react";
 import ContextMenu from "./context-menu";
 import { useChangeEdgeType } from "@/app/store/use-custom-edge";
@@ -26,6 +26,8 @@ import { useSaveHandlerOnHotkeyKeydown } from "@/app/hooks/useSaveHandlerOnKeydo
 import { HistoryModal } from "./HistoryModal";
 import { useInitializeBoard } from "@/app/hooks/useInitializeBoard";
 import { NodeDetailsPanel } from "@/components/NodeDetailsPanel";
+import EdgeContextMenu from "./edge-context-menu";
+import { shallow } from "zustand/shallow";
 
 // const selector = (state: RFState) => ({
 //   nodes: state.nodes,
@@ -48,6 +50,14 @@ interface IContextMenu {
   bottom: number | boolean;
 }
 
+const selector = (state: RFState) => ({
+  nodes: state.nodes,
+  edges: state.edges,
+  onNodesChange: state.onNodesChange,
+  onEdgesChange: state.onEdgesChange,
+  addNode: state.addNode,
+});
+
 const Flow = ({ boardId }: FlowProps) => {
   useInitializeBoard(boardId as Id<"boards">);
 
@@ -62,6 +72,7 @@ const Flow = ({ boardId }: FlowProps) => {
   } = useStore();
   const { autoSave, manualSave } = useVersionsHistory(boardId);
   useSaveHandlerOnHotkeyKeydown(manualSave);
+  const { addNode } = useStore(selector, shallow);
 
   const [{ cursor }, updateMyPresence] = useMyPresence();
   const others = useOthers();
@@ -71,6 +82,24 @@ const Flow = ({ boardId }: FlowProps) => {
   const { analytics, setAnalytics } = useChangeEdgeType();
   const [menu, setMenu] = useState<IContextMenu | null>(null);
   const ref = useRef(null);
+  // В flow.tsx добавим состояние для контекстного меню ребра
+  const [edgeMenu, setEdgeMenu] = useState<{ id: string; top: number; left: number } | null>(null);
+
+  const { project } = useReactFlow(); // ✅ работает, т.к. компонент внутри <ReactFlow>
+
+  const handleAddNode = (struct: StructType) => {
+    const center = project({ x: window.innerWidth / 2, y: window.innerHeight / 2 });
+    addNode(struct, center); // предполагаем, что addNode из стора принимает позицию
+  };
+
+  const onEdgeContextMenu = useCallback((event: React.MouseEvent, edge: Edge) => {
+    event.preventDefault();
+    setEdgeMenu({
+      id: edge.id,
+      top: event.clientY,
+      left: event.clientX,
+    });
+  }, []);
 
   const onNodeContextMenu = useCallback(
     (event: any, node: any) => {
@@ -92,6 +121,7 @@ const Flow = ({ boardId }: FlowProps) => {
 
   const onPaneClick = useCallback(() => {
     setMenu(null);
+    setEdgeMenu(null);
   }, [setMenu]);
 
   useEffect(() => {
@@ -121,11 +151,7 @@ const Flow = ({ boardId }: FlowProps) => {
         })
       }
     >
-      {!isVisibleEditor && (
-        <div className="z-10 w-full relative">
-          <Toolbar />
-        </div>
-      )}
+
 
       {others.map(({ connectionId, presence }) => {
         if (presence.cursor === null) {
@@ -133,7 +159,7 @@ const Flow = ({ boardId }: FlowProps) => {
         }
         return <Cursor key={connectionId} connectionId={connectionId} />;
       })}
-
+      
       <ReactFlow
         ref={ref}
         nodes={nodes}
@@ -144,10 +170,25 @@ const Flow = ({ boardId }: FlowProps) => {
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
         onPaneClick={onPaneClick}
+        onEdgeContextMenu={onEdgeContextMenu}
         onNodeContextMenu={onNodeContextMenu}
       >
         {menu && <ContextMenu onClick={onPaneClick} {...menu} />}
+        {edgeMenu && (
+          <EdgeContextMenu
+            id={edgeMenu.id}
+            top={edgeMenu.top}
+            left={edgeMenu.left}
+            onClose={() => setEdgeMenu(null)}
+          />
+        )}
         <Controls position="bottom-right" />
+
+        {!isVisibleEditor && (
+          <Panel position="top-left" className="!top-40 !left-2 !m-0">
+            <Toolbar onAddNode={handleAddNode} />
+          </Panel>
+        )}
 
         {isVisibleEditor && (
           <Panel position="top-left" className="position_panel">
@@ -211,6 +252,7 @@ const Flow = ({ boardId }: FlowProps) => {
         <BottomPanel />
         <NodeDetailsPanel />
       </ReactFlow>
+
     </main>
   );
 };

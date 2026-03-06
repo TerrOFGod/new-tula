@@ -82,9 +82,9 @@ export const StyledNode = ({ struct, label, name, info }: ITestNodeProps) => {
       {struct !== StructType.End && (
         <Handle type="source" position={Position.Right} />
       )}
-      <div className="h-full w-full flex justify-center">
+      <div className="h-full w-full flex justify-center ">
         <input
-          className="bg-transparent w-[50px] border-none text-xs font-bold text-center"
+          className="bg-transparent w-fit max-w-[80px] border-none text-xs font-bold text-center"
           value={value}
           onChange={onChange}
         />

@@ -20,6 +20,7 @@ interface DataProps {
     label: string;
     struct: StructType;
     name?: string | undefined;
+    initialValue?: number;
     resourceType?: string;
     min?: number;
     max?: number;
@@ -28,7 +29,7 @@ interface DataProps {
 }
 
 const PoolNode = ({ data, selected, id, }: DataProps) => {
-  const { struct, label, name, resourceType, min, max } = data;
+  const { struct, label, name, resourceType, min, max, initialValue } = data;
   const info = resourceType ? `${resourceType}: ${label} [${min},${max}]` : `${label} [${min},${max}]`;
 
   const { isPlay, onStop, onReset, time, gamesCount, resetNodes } =
@@ -42,6 +43,7 @@ const PoolNode = ({ data, selected, id, }: DataProps) => {
 
   useEffect(() => {
     let intervalId = null;
+    if (initialValue) setNodeLabel(nodeId!, initialValue);
     if (isPlay) {
       let newEdges = edges.filter((edge) => edge.target === nodeId);
       const sumOfData = newEdges.reduce((accumulator, currentEdge) => {

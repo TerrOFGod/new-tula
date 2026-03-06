@@ -12,6 +12,8 @@ import {
   getStraightPath,
 } from "reactflow";
 
+
+
 export default function CustomEdge(props: EdgeProps) {
   const {
     error,
@@ -29,10 +31,10 @@ export default function CustomEdge(props: EdgeProps) {
     targetY,
     targetPosition,
     id,
-    data: initalValue,
+    data = {},
   } = props;
 
-  const [inputValue, setInputValue] = useState<number>(initalValue ?? 1);
+  const [inputValue, setInputValue] = useState<number>(data.value ?? 1);
   const [edgePath, labelX, labelY] = getBezierPath({
     sourceX,
     sourceY,
@@ -73,7 +75,7 @@ export default function CustomEdge(props: EdgeProps) {
       setError(null);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initalValue]);
+  }, [data.value]);
 
   return (
     <>

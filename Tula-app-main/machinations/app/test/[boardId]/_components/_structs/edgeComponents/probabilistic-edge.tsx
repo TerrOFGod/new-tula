@@ -1,4 +1,5 @@
 import { useChangeEdgeType } from "@/app/store/use-custom-edge";
+import { ConnectionType } from "@/app/types/structs";
 import React, { useState } from "react";
 import { EdgeProps, getBezierPath, EdgeLabelRenderer, getStraightPath, BaseEdge, BezierEdge, StepEdge } from "reactflow";
 
@@ -14,6 +15,12 @@ export default function ProbabilisticEdge(props: EdgeProps) {
     style,
     id,
   } = props;
+
+  const edgeStyle = {
+    ...style, stroke: '#ff6b6b', strokeWidth: 2,
+    strokeDasharray: data.connectionType === ConnectionType.TRIGGER ? '5,5' : 'none',
+    // можно также задать цвет или другие отличия
+  };
 
   const {
     error,
@@ -48,9 +55,9 @@ export default function ProbabilisticEdge(props: EdgeProps) {
 
   return (
     <>
-      {currentType === "SmoothStep" && <StepEdge {...props}  style={{ ...style, stroke: '#ff6b6b', strokeWidth: 2, strokeDasharray: '5,5' }}/>}
-      {currentType === "Default" && <BaseEdge path={basePath} {...props}  style={{ ...style, stroke: '#ff6b6b', strokeWidth: 2, strokeDasharray: '5,5' }}/>}
-      {currentType == "Bezier" && <BezierEdge {...props}  style={{ ...style, stroke: '#ff6b6b', strokeWidth: 2, strokeDasharray: '5,5' }}/>}
+      {currentType === "SmoothStep" && <StepEdge {...props}  style={edgeStyle}/>}
+      {currentType === "Default" && <BaseEdge path={basePath} {...props}  style={edgeStyle}/>}
+      {currentType == "Bezier" && <BezierEdge {...props}  style={edgeStyle}/>}
 
       <EdgeLabelRenderer>
         <div

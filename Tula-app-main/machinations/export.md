@@ -3925,71 +3925,104 @@ const useStore = createWithEqualityFn<WithLiveblocks<RFState>>()(
       addNode: (struct: StructType) => {
         let newNode;
 
+        const baseNode = {
+          id: nanoid(),
+          position: {
+            x: (Math.random() * window.innerWidth) / 2,
+            y: (Math.random() * window.innerHeight) / 2,
+          },
+        };
+
         switch (struct) {
+          case StructType.Source:
+            newNode = {
+              ...baseNode,
+              type: 'sourceNode',
+              data: { label: '0', struct: StructType.Source, name: '', generationRate: 1, triggerEvent: '' },
+            };
+            break;
+          case StructType.Pool:
+            newNode = {
+              ...baseNode,
+              type: 'poolNode',
+              data: { label: '0', struct: StructType.Pool, name: '', resourceType: '', min: 0, max: 100, initialValue: 0 },
+            };
+            break;
+          case StructType.Converter:
+            newNode = {
+              ...baseNode,
+              type: 'converterNode',
+              data: { label: '0', struct: StructType.Converter, name: '', conversionIn: 1, conversionOut: 1, converterProbEffects: [] },
+            };
+            break;
+          case StructType.Gate:
+            newNode = {
+              ...baseNode,
+              type: 'gateNode',
+              data: { label: '0', struct: StructType.Gate, name: '', gateType: 'probabilistic' },
+            };
+            break;
+          case StructType.Delay:
+            newNode = {
+              ...baseNode,
+              type: 'delayNode',
+              data: { label: '0', struct: StructType.Delay, name: '', delaySteps: 1 },
+            };
+            break;
+          case StructType.End:
+            newNode = {
+              ...baseNode,
+              type: 'endNode',
+              data: { label: '0', struct: StructType.End, name: '', endType: 'win' },
+            };
+            break;
+          case StructType.Trigger:
+            newNode = {
+              ...baseNode,
+              type: 'triggerNode',
+              data: { label: '0', struct: StructType.Trigger, name: '', triggerEvent: '' },
+            };
+            break;
           case StructType.Entity:
             newNode = {
-              id: nanoid(),
+              ...baseNode,
               type: 'entityNode',
               data: { label: '0', struct: StructType.Entity, name: '', states: [], events: [] },
-              position: {
-                x: (Math.random() * window.innerWidth) / 2,
-                y: (Math.random() * window.innerHeight) / 2,
-              },
             };
             break;
           case StructType.State:
             newNode = {
-              id: nanoid(),
+              ...baseNode,
               type: 'stateNode',
               data: { label: '0', struct: StructType.State, name: '', valueType: 'int', range: [0, 100] },
-              position: {
-                x: (Math.random() * window.innerWidth) / 2,
-                y: (Math.random() * window.innerHeight) / 2,
-              },
             };
             break;
           case StructType.Event:
             newNode = {
-              id: nanoid(),
+              ...baseNode,
               type: 'eventNode',
               data: { label: '0', struct: StructType.Event, name: '', requires: '', effect: '', probability: 0.5 },
-              position: {
-                x: (Math.random() * window.innerWidth) / 2,
-                y: (Math.random() * window.innerHeight) / 2,
-              },
             };
             break;
           case StructType.Rule:
             newNode = {
-              id: nanoid(),
+              ...baseNode,
               type: 'ruleNode',
               data: { label: '0', struct: StructType.Rule, name: '', when: '', effect: '' },
-              position: {
-                x: (Math.random() * window.innerWidth) / 2,
-                y: (Math.random() * window.innerHeight) / 2,
-              },
             };
             break;
           case StructType.Operator:
             newNode = {
-              id: nanoid(),
+              ...baseNode,
               type: 'operatorNode',
               data: { label: '0', struct: StructType.Operator, operator: 'X' },
-              position: {
-                x: (Math.random() * window.innerWidth) / 2,
-                y: (Math.random() * window.innerHeight) / 2,
-              },
             };
             break;
           default:
             newNode = {
-              id: nanoid(),
+              ...baseNode,
               type: struct.toLowerCase() + "Node",
               data: { label: "0", struct: struct, name: "" },
-              position: {
-                x: (Math.random() * window.innerWidth) / 2,
-                y: (Math.random() * window.innerHeight) / 2,
-              },
             };
         }
 
@@ -4710,9 +4743,9 @@ export default function ProbabilisticEdge(props: EdgeProps) {
 
   return (
     <>
-      {currentType === "SmoothStep" && <StepEdge {...props}  style={{ ...style, stroke: '#ff6b6b', strokeWidth: 2, strokeDasharray: '5,5' }}/>}
-      {currentType === "Default" && <BaseEdge path={basePath} {...props}  style={{ ...style, stroke: '#ff6b6b', strokeWidth: 2, strokeDasharray: '5,5' }}/>}
-      {currentType == "Bezier" && <BezierEdge {...props}  style={{ ...style, stroke: '#ff6b6b', strokeWidth: 2, strokeDasharray: '5,5' }}/>}
+      {currentType === "SmoothStep" && <StepEdge {...props}  style={{ ...style, stroke: '#ff6b6b' }}/>}
+      {currentType === "Default" && <BaseEdge path={basePath} {...props}  style={{ ...style, stroke: '#ff6b6b' }}/>}
+      {currentType == "Bezier" && <BezierEdge {...props}  style={{ ...style, stroke: '#ff6b6b' }}/>}
 
       <EdgeLabelRenderer>
         <div
@@ -5112,6 +5145,7 @@ interface DataProps {
     label: string;
     struct: StructType;
     name?: string;
+    consumptionAmount?: number;
   };
   selected: boolean;
   id: string;
@@ -5119,15 +5153,18 @@ interface DataProps {
 
 const ConsumerNode = ({
   id,
-  data: { label, struct, name, },
+  data,
   selected,
 }: DataProps) => {
+  const { label, struct, name, consumptionAmount} = data;
   const { isPlay, onStop, onReset, time } = useAnimateScheme();
   const { setNodeLabel, getEdgeValues } = useStore();
   const { openDetails } = useNodeDetails();
   const nodeId = useNodeId();
   const edges = useEdges<any>();
   const nodes = useNodes<any>();
+
+  const info = (consumptionAmount) ? `-${consumptionAmount}` : '';
 
   useEffect(() => {
     let intervalId = null;
@@ -5171,7 +5208,7 @@ const ConsumerNode = ({
           minWidth={45}
           minHeight={45}
         />
-        <StyledNode struct={struct} label={label} name={name} />
+        <StyledNode struct={struct} label={label} name={name} info={info} />
       </div>
     </>
   );
@@ -5198,17 +5235,21 @@ interface DataProps {
     label: string;
     struct: StructType;
     name?: string;
-    
+    conversionIn?: number;
+    conversionOut?: number;
+    converterProbEffects?: any[];
   };
   selected: boolean;
   id: string;
 }
 
-const ConverterNode = ({
-  id,
-  data: { label, struct, name, },
-  selected,
-}: DataProps) => {
+const ConverterNode = ({ id, data, selected, }: DataProps) => {
+  const { struct, label, name, conversionIn, conversionOut, converterProbEffects } = data;
+  const hasProb = converterProbEffects && converterProbEffects.length > 0;
+  const ratio = `${conversionIn}->${conversionOut}`;
+  const probRatio = hasProb ? `p=${converterProbEffects[0].probability}:${converterProbEffects[0].conversionIn}->${converterProbEffects[0].conversionOut}` : '';
+  const info = hasProb ? probRatio : ratio;
+
   const { isPlay, onStop, onReset, time } = useAnimateScheme();
   const { setNodeLabel, getEdgeValues } = useStore();
   const { openDetails } = useNodeDetails();
@@ -5253,13 +5294,8 @@ const ConverterNode = ({
   return (
     <>
       <div onDoubleClick={() => openDetails(id, 'converter')}>
-        <NodeResizer
-        color="blue"
-        isVisible={selected}
-        minWidth={45}
-        minHeight={45}
-        />
-        <StyledNode struct={struct} label={label} name={name} />
+        <NodeResizer color="blue" isVisible={selected} minWidth={45} minHeight={45} />
+        <StyledNode struct={struct} label={label} name={name} info={info} />
       </div>
     </>
   );
@@ -5293,13 +5329,16 @@ interface DataProps {
     label: string;
     struct: StructType;
     name?: string;
-    
+    delaySteps?: number;
   };
   selected: boolean;
   id: string;
 }
 
-const DelayNode = ({ id, data: { label, struct, name, }, selected }: DataProps) => {
+const DelayNode = ({ id, data, selected }: DataProps) => {
+  const { struct, label, name, delaySteps } = data;
+  const info = delaySteps ? `δ=${delaySteps}` : '';
+
   const { isPlay, onStop, onReset, time } = useAnimateScheme();
   const { setNodeLabel, getEdgeValues } = useStore();
   const { openDetails } = useNodeDetails();
@@ -5344,7 +5383,7 @@ const DelayNode = ({ id, data: { label, struct, name, }, selected }: DataProps) 
           minWidth={45}
           minHeight={45}
         />
-        <StyledNode struct={struct} label={label} name={name} />
+        <StyledNode struct={struct} label={label} name={name} info={info} />
       </div>
     </>
   );
@@ -5378,13 +5417,16 @@ interface DataProps {
     label: string;
     struct: StructType;
     name?: string;
-    
+    endType?: string;
   };
   selected: boolean;
   id: string;
 }
 
-const EndNode = ({ id, data: { label, struct, name, }, selected }: DataProps) => {
+const EndNode = ({ id, data, selected }: DataProps) => {
+  const { struct, label, name, endType } = data;
+  const info = endType ? `end:${endType}` : '';
+
   const { isPlay, onStop, onReset, time } = useAnimateScheme();
   const { setNodeLabel, getEdgeValues } = useStore();
   const { openDetails } = useNodeDetails();
@@ -5429,7 +5471,7 @@ const EndNode = ({ id, data: { label, struct, name, }, selected }: DataProps) =>
           minWidth={45}
           minHeight={45}
         />
-        <StyledNode struct={struct} label={label} name={name} />
+        <StyledNode struct={struct} label={label} name={name} info={info} />
       </div>
     </>
   );
@@ -5463,13 +5505,18 @@ interface DataProps {
     label: string;
     struct: StructType;
     name?: string;
-    
+    gateType?: string;
+    condition?: string;
   };
   selected: boolean;
   id: string;
 }
 
-const GateNode = ({ id, data: { label, struct, name, }, selected }: DataProps) => {
+const GateNode = ({ id, data, selected }: DataProps) => {
+  const { struct, label, name, gateType, condition } = data;
+  const gateT = gateType ? gateType : '';
+  const info = (gateT === 'conditional' && condition) ? `${gateT} \n ${condition}` : gateT;
+
   const { isPlay, onStop, onReset, time } = useAnimateScheme();
   const { setNodeLabel, getEdgeValues } = useStore();
   const { openDetails } = useNodeDetails();
@@ -5518,7 +5565,7 @@ const GateNode = ({ id, data: { label, struct, name, }, selected }: DataProps) =
           minWidth={45}
           minHeight={45}
         />
-        <StyledNode struct={struct} label={label} name={name} />
+        <StyledNode struct={struct} label={label} name={name} info={info} />
       </div>
     </>
   );
@@ -5553,15 +5600,18 @@ interface DataProps {
     label: string;
     struct: StructType;
     name?: string | undefined;
+    initialValue?: number;
+    resourceType?: string;
+    min?: number;
+    max?: number;
   };
   selected: boolean;
 }
 
-const PoolNode = ({
-  data: { label, struct, name },
-  selected,
-  id,
-}: DataProps) => {
+const PoolNode = ({ data, selected, id, }: DataProps) => {
+  const { struct, label, name, resourceType, min, max, initialValue } = data;
+  const info = resourceType ? `${resourceType}: ${label} [${min},${max}]` : `${label} [${min},${max}]`;
+
   const { isPlay, onStop, onReset, time, gamesCount, resetNodes } =
     useAnimateScheme();
 
@@ -5573,6 +5623,7 @@ const PoolNode = ({
 
   useEffect(() => {
     let intervalId = null;
+    if (initialValue) setNodeLabel(nodeId!, initialValue);
     if (isPlay) {
       let newEdges = edges.filter((edge) => edge.target === nodeId);
       const sumOfData = newEdges.reduce((accumulator, currentEdge) => {
@@ -5595,7 +5646,7 @@ const PoolNode = ({
           minHeight={45}
         />
 
-        <StyledNode struct={struct} label={label} name={name} />
+        <StyledNode struct={struct} label={label} name={name} info={info} />
       </div>
 
     </>
@@ -5694,12 +5745,78 @@ interface DataProps {
     struct: StructType;
     name?: string;
     
+    //general
+    distributionType?: any;
+    rateType?: any;
+    generationRate?: number;
+    parameterRate?: string;
+
+    //normal
+    mean?: number;
+    stddev?: number;
+
+    //exponential
+    rate?: number;
+
+    //deterministic
+    triggerEvent?: string;
+    
+    //temporal
+    interval?: number;
+    startTurn?: number;
   };
   selected: boolean;
   id: string;
 }
 
-const SourceNode = ({ id, data: { label, struct, name,  }, selected }: DataProps) => {
+const SourceNode = ({ id, data, selected }: DataProps) => {
+  const { 
+    struct, 
+    label, 
+    name, 
+    //general
+    rateType,
+    distributionType,
+    generationRate, 
+    parameterRate,
+    //normal
+    mean,
+    stddev,
+    //exponential
+    rate,
+    //deterministic
+    triggerEvent, 
+    //temporal
+    startTurn,
+    interval } = data;
+  let inf = "";
+  let par = "";
+  switch (rateType){
+    case "numeric":
+      par = generationRate ? `${generationRate}` : '';
+      break;
+    case "parametric":
+      par = parameterRate ? parameterRate : '';
+      break;
+  }
+
+  switch (distributionType){
+    case "deterministic":
+      inf = triggerEvent ? `trigger: ${triggerEvent}` : '';
+      break;
+    case "normal":
+      inf = (par !== '') ? `gen: ${par}/sec` : '';
+      break;
+    case "exponential":
+      inf = (par !== '') ? `gen: ${generationRate} per ${rate} sec(s)` : '';
+      break;
+    case "temporal":
+      let startOn = startTurn ? `starts on turn: ${startTurn} \n` : '';
+      inf = (par !== '') ? `${startOn}gen: ${par} per ${interval} turn(s)` : '';
+      break;
+  }
+  const info = inf;
+
   const { isPlay, onStop, onReset, time } = useAnimateScheme();
   const { setNodeLabel, getEdgeValues } = useStore();
   const { openDetails } = useNodeDetails();
@@ -5740,7 +5857,7 @@ const SourceNode = ({ id, data: { label, struct, name,  }, selected }: DataProps
           minWidth={45}
           minHeight={45}
         />
-        <StyledNode struct={struct} label={label} name={name} />
+        <StyledNode struct={struct} label={label} name={name} info={info} />
       </div>
     </>
   );
@@ -5775,15 +5892,15 @@ interface DataProps {
     label: string;
     struct: StructType;
     name?: string | undefined;
+    triggerEvent?: string;
   };
   selected: boolean;
 }
 
-const TriggerNode = ({
-  data: { label, struct, name },
-  selected,
-  id,
-}: DataProps) => {
+const TriggerNode = ({ data, selected, id, }: DataProps) => {
+  const { struct, label, name, triggerEvent } = data;
+  const info = triggerEvent ? `event:${triggerEvent}` : '';
+
   const { isPlay, onStop, onReset, time, gamesCount, resetNodes } =
     useAnimateScheme();
 
@@ -5817,7 +5934,7 @@ const TriggerNode = ({
           minHeight={45}
         />
 
-        <StyledNode struct={struct} label={label} name={name} />
+        <StyledNode struct={struct} label={label} name={name} info={info} />
       </div>
 
     </>
@@ -5831,130 +5948,75 @@ export default memo(TriggerNode);
 ## app\test\[boardId]\_components\_structs\nodeComponents\nodeStyle.css
 
 ```css
-.delayNode{
-    border: 2px solid red;
+/* Common node styles */
+.triggerNode,
+.delayNode,
+.consumerNode,
+.converterNode,
+.endNode,
+.gateNode,
+.poolNode,
+.sourceNode,
+.randomNode {
     position: relative;
-    height: 50px;
-    width: 50px;
+    width: 100%;
+    height: 100%;
     overflow: hidden;
-    border-radius: 5px;
     display: flex;
+    flex-direction: column;   /* stack children vertically */
     background: white;
     justify-content: center;
     align-items: center;
     font-weight: bold;
+    padding: 4px;
+    box-sizing: border-box;
 }
 
-.consumerNode{
-    border: 2px solid blue;
-    position: relative;
-    height: 50px;
-    width: 50px;
-    overflow: hidden;
-    border-radius: 100%;
-    display: flex;
-    background: white;
-    justify-content: center;
-    align-items: center;
-    font-weight: bold;
+/* Enforce square/circle shape */
+.consumerNode,
+.converterNode,
+.gateNode,
+.poolNode,
+.sourceNode,
+.randomNode,
+.triggerNode {
+  aspect-ratio: 1 / 1;   /* circle nodes – also have border-radius 50% */
+  border-radius: 50%;
 }
 
-.converterNode{
-    border: 2px solid blue;
-    position: relative;
-    height: 50px;
-    width: 50px;
-    overflow: hidden;
-    border-radius: 100%;
-    display: flex;
-    background: white;
-    justify-content: center;
-    align-items: center;
-    font-weight: bold;
+.delayNode,
+.endNode {
+  aspect-ratio: 1 / 1;   /* square nodes – border-radius 5px */
+  border-radius: 5px;
 }
 
-.triggerNode{
-    border: 2px solid black;
-    position: relative;
-    height: 50px;
-    width: 50px;
-    overflow: hidden;
-    border-radius: 100%;
+/* Specific border colors */
+.delayNode { border: 2px solid red; }
+.consumerNode { border: 2px solid blue; }
+.converterNode { border: 2px solid blue; }
+.endNode { border: 2px solid black; }
+.gateNode { border: 2px solid blue; }
+.poolNode { border: 2px solid blue; }
+.sourceNode { border: 2px solid greenyellow; }
+.randomNode { border: 2px solid red; }
+.triggerNode { border: 2px solid #f97316; } /* orange for trigger */
+
+.node-icon-label {
     display: flex;
-    background: white;
-    justify-content: center;
     align-items: center;
-    font-weight: bold;
+    justify-content: center;
+    font-size: 14px;
 }
 
-.endNode{
-    border: 2px solid black;
-    position: relative;
-    height: 50px;
-    width: 50px;
-    overflow: hidden;
-    border-radius: 5px;
-    display: flex;
-    background: white;
-    justify-content: center;
-    align-items: center;
-    font-weight: bold;
-}
-
-.gateNode{
-    border: 2px solid blue;
-    position: relative;
-    height: 50px;
-    width: 50px;
-    overflow: hidden;
-    border-radius: 100%;
-    display: flex;
-    background: white;
-    justify-content: center;
-    align-items: center;
-    font-weight: bold;
-}
-
-.poolNode{
-    border: 2px solid blue;
-    position: relative;
-    height: 50px;
-    width: 50px;
-    overflow: hidden;
-    border-radius: 100%;
-    display: flex;
-    background: white;
-    justify-content: center;
-    align-items: center;
-    font-weight: bold;
-}
-
-.sourceNode{
-    border: 2px solid greenyellow;
-    position: relative;
-    height: 50px;
-    width: 50px;
-    overflow: hidden;
-    border-radius: 100%;
-    display: flex;
-    background: white;
-    justify-content: center;
-    align-items: center;
-    font-weight: bold;
-}
-
-.randomNode{
-    border: 2px solid red;
-    position: relative;
-    height: 50px;
-    width: 50px;
-    overflow: hidden;
-    border-radius: 5px;
-    display: flex;
-    background: white;
-    justify-content: center;
-    align-items: center;
-    font-weight: bold;
+.node-info {
+    font-size: 9px;
+    line-height: 1.2;
+    color: #333;
+    max-width: 100%;
+    word-break: break-word;
+    text-align: center;
+    margin-top: 2px;
+    white-space: pre-line;
 }
 ```
 
@@ -5984,6 +6046,7 @@ interface ITestNodeProps {
   struct: StructType;
   label: string;
   name?: string;
+  info?: string;
 }
 
 type StructStyles = {
@@ -6022,7 +6085,7 @@ const styleNodeIcon: any = {
   Trigger: <Webhook />,
 };
 
-export const StyledNode = ({ struct, label, name }: ITestNodeProps) => {
+export const StyledNode = ({ struct, label, name, info }: ITestNodeProps) => {
   const { setNodeName } = useStore();
   const nodeId = useNodeId();
 
@@ -6038,15 +6101,16 @@ export const StyledNode = ({ struct, label, name }: ITestNodeProps) => {
         <Handle type={"target"} position={Position.Left} />
       )}
       <div className={styleNode[struct]}>
-        {struct in styleNodeIcon ? styleNodeIcon[struct] : label}
+        <div className="node-icon-label">{struct in styleNodeIcon ? styleNodeIcon[struct] : label}</div>
+        {info && ( <div className="node-info"> {info} </div> )}
         {/* {label} */}
       </div>
       {struct !== StructType.End && (
         <Handle type="source" position={Position.Right} />
       )}
-      <div className="h-full w-full flex justify-center">
+      <div className="h-full w-full flex justify-center ">
         <input
-          className="bg-transparent w-[50px] border-none text-xs font-bold text-center"
+          className="bg-transparent w-fit max-w-[80px] border-none text-xs font-bold text-center"
           value={value}
           onChange={onChange}
         />
@@ -15388,10 +15452,28 @@ const renderSourceFields = () => (
         <Label htmlFor="name">Name</Label>
         <Input id="name" value={nodeData.name || ""} onChange={(e) => handleChange("name", e.target.value)} />
       </div>
-      <div className="space-y-2">
-        <Label htmlFor="generationRate">Generation Rate</Label>
-        <Input id="generationRate" type="number" value={nodeData.generationRate ?? 1} onChange={(e) => handleChange("generationRate", parseInt(e.target.value))} />
-      </div>
+      <Label htmlFor="rateType">Rate Type</Label>
+      <Select value={nodeData.rateType || "numeric"} onValueChange={(v) => handleChange("rateType", v)}>
+        <SelectTrigger>
+          <SelectValue placeholder="Select type" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="numeric">Numeric</SelectItem>
+          <SelectItem value="parametric">Parametric</SelectItem>
+        </SelectContent>
+      </Select>
+      {nodeData.rateType === "numeric" && (
+        <div className="space-y-2">
+          <Label htmlFor="generationRate">Generation Rate</Label>
+          <Input id="generationRate" type="number" value={nodeData.generationRate ?? 1} onChange={(e) => handleChange("generationRate", parseInt(e.target.value))} />
+        </div>
+      )}
+      {nodeData.rateType === "parametric" && (
+        <div className="space-y-2">
+          <Label htmlFor="parameterRate">Parameter</Label>
+          <Textarea id="parameterRate" value={nodeData.parameterRate || ""} onChange={(e) => handleChange("parameterRate", e.target.value)} />
+        </div>
+      )}
     </TabsContent>
     <TabsContent value="distribution" className="space-y-4 mt-4">
       <div className="space-y-2">
@@ -15408,6 +15490,14 @@ const renderSourceFields = () => (
           </SelectContent>
         </Select>
       </div>
+      {nodeData.distributionType === "deterministic" && (
+        <div className="grid grid-cols-2 gap-2">
+          <div className="space-y-2">
+            <Label htmlFor="triggerEvent">Trigger</Label>
+            <Textarea id="triggerEvent" value={nodeData.triggerEvent || ""} onChange={(e) => handleChange("triggerEvent", e.target.value)} />
+          </div>
+        </div>
+      )}
       {nodeData.distributionType === "normal" && (
         <div className="grid grid-cols-2 gap-2">
           <div className="space-y-2">
@@ -15573,6 +15663,14 @@ const renderGateFields = () => (
           <SelectItem value="conditional">Conditional</SelectItem>
         </SelectContent>
       </Select>
+      {nodeData.gateType === "conditional" && (
+        <div className="grid grid-cols-2 gap-2">
+          <div className="space-y-2">
+            <Label htmlFor="condition">Condition</Label>
+            <Textarea id="condition" value={nodeData.condition || ""} onChange={(e) => handleChange("condition", e.target.value)} />
+          </div>
+        </div>
+      )}
     </div>
   </div>
 );
@@ -18049,7 +18147,7 @@ next-env.d.ts
 
 ## export.md
 
-File is too large to process (1519362 bytes)
+File is too large to process (1545490 bytes)
 
 
 ## liveblocks.config.ts

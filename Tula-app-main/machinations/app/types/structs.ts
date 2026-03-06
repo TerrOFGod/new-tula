@@ -47,6 +47,11 @@ export enum EdgesTypes {
   BEZIER = "Bezier",
 }
 
+export enum ConnectionType {
+  RESOURCE = 'resource',
+  TRIGGER = 'trigger',
+}
+
 export type SourceStruct = {
   id: number | string;
   type: StructType.Source;

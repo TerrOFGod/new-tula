@@ -14,8 +14,10 @@ interface DataProps {
     name?: string;
     
     //general
-    generationRate?: number;
     distributionType?: any;
+    rateType?: any;
+    generationRate?: number;
+    parameterRate?: string;
 
     //normal
     mean?: number;
@@ -41,8 +43,10 @@ const SourceNode = ({ id, data, selected }: DataProps) => {
     label, 
     name, 
     //general
-    generationRate, 
+    rateType,
     distributionType,
+    generationRate, 
+    parameterRate,
     //normal
     mean,
     stddev,
@@ -54,19 +58,29 @@ const SourceNode = ({ id, data, selected }: DataProps) => {
     startTurn,
     interval } = data;
   let inf = "";
+  let par = "";
+  switch (rateType){
+    case "numeric":
+      par = generationRate ? `${generationRate}` : '';
+      break;
+    case "parametric":
+      par = parameterRate ? parameterRate : '';
+      break;
+  }
+
   switch (distributionType){
     case "deterministic":
       inf = triggerEvent ? `trigger: ${triggerEvent}` : '';
       break;
     case "normal":
-      inf = generationRate ? `gen: ${generationRate}/sec` : '';
+      inf = (par !== '') ? `gen: ${par}/sec` : '';
       break;
     case "exponential":
-      inf = generationRate ? `gen: ${generationRate} per ${rate} sec(s)` : '';
+      inf = (par !== '') ? `gen: ${generationRate} per ${rate} sec(s)` : '';
       break;
     case "temporal":
       let startOn = startTurn ? `starts on turn: ${startTurn} \n` : '';
-      inf = generationRate ? `${startOn}gen: ${generationRate} per ${interval} turn(s)` : '';
+      inf = (par !== '') ? `${startOn}gen: ${par} per ${interval} turn(s)` : '';
       break;
   }
   const info = inf;
