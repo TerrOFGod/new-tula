@@ -72,7 +72,7 @@ const Flow = ({ boardId }: FlowProps) => {
   } = useStore();
   const { autoSave, manualSave } = useVersionsHistory(boardId);
   useSaveHandlerOnHotkeyKeydown(manualSave);
-  const { addNode } = useStore(selector, shallow);
+  const { addNode } = useStore();
 
   const [{ cursor }, updateMyPresence] = useMyPresence();
   const others = useOthers();
@@ -87,10 +87,10 @@ const Flow = ({ boardId }: FlowProps) => {
 
   const { project } = useReactFlow(); // ✅ работает, т.к. компонент внутри <ReactFlow>
 
-  const handleAddNode = (struct: StructType) => {
-    const center = project({ x: window.innerWidth / 2, y: window.innerHeight / 2 });
-    addNode(struct, center); // предполагаем, что addNode из стора принимает позицию
-  };
+const handleAddNode = useCallback((struct: StructType) => {
+  const center = project({ x: window.innerWidth / 2, y: window.innerHeight / 2 });
+  addNode(struct, center);
+}, [project, addNode]);
 
   const onEdgeContextMenu = useCallback((event: React.MouseEvent, edge: Edge) => {
     event.preventDefault();

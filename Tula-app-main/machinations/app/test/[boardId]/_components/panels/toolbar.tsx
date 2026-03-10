@@ -26,11 +26,11 @@ import {
 } from "lucide-react";
 import useStore, { RFState } from "@/app/store/store";
 import { shallow } from "zustand/shallow";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { useReactFlow } from "reactflow";
 
 interface ToolbarProps {
-  onAddNode: (struct: StructType) => void; // новый пропс
+  onAddNode?: (struct: StructType) => void; // новый пропс
 }
 
 const selector = (state: RFState) => ({
@@ -48,6 +48,16 @@ export const Toolbar = ({ onAddNode }: ToolbarProps) => {
   const [isTulaOpen, setIsTulaOpen] = useState(true);
   const [isSpecOpen, setIsSpecOpen] = useState(true);
 
+  const { addNode } = useStore(selector, shallow);
+
+    const handleAddNode = useCallback((struct: StructType) => {
+    if (onAddNode) {
+      onAddNode(struct); // используем переданную функцию (с центрированием)
+    } else {
+      addNode(struct); // fallback (случайная позиция)
+    }
+  }, [onAddNode, addNode]);
+
   return (
     <div className="absolute top-40 left-2 flex flex-col gap-y-4">
       {/* Раздел TULA */}
@@ -61,15 +71,15 @@ export const Toolbar = ({ onAddNode }: ToolbarProps) => {
         </button>
         {isTulaOpen && (
           <div className="p-3 pt-0 grid grid-cols-3 gap-1 animate-in slide-in-from-top-1 duration-200">
-            <ToolButton label="Source" onClick={() => onAddNode(StructType.Source)} isActive={false} icon={Play} />
-            <ToolButton label="Pool" onClick={() => onAddNode(StructType.Pool)} isActive={false} icon={BadgePlus} />
-            <ToolButton label="Consumer" onClick={() => onAddNode(StructType.Consumer)} isActive={false} icon={BadgeMinus} />
-            <ToolButton label="Converter" onClick={() => onAddNode(StructType.Converter)} isActive={true} icon={Recycle} />
-            <ToolButton label="Gate" onClick={() => onAddNode(StructType.Gate)} isActive={false} icon={ArrowLeftRight} />
-            <ToolButton label="Random" onClick={() => onAddNode(StructType.Random)} isActive={false} icon={Dices} />
-            <ToolButton label="Delay" onClick={() => onAddNode(StructType.Delay)} isActive={false} icon={Hourglass} />
-            <ToolButton label="Trigger" onClick={() => onAddNode(StructType.Trigger)} isActive={false} icon={Webhook} />
-            <ToolButton label="End" onClick={() => onAddNode(StructType.End)} isActive={false} icon={CheckCheck} />
+            <ToolButton label="Source" onClick={() => handleAddNode(StructType.Source)} isActive={false} icon={Play} />
+            <ToolButton label="Pool" onClick={() => handleAddNode(StructType.Pool)} isActive={false} icon={BadgePlus} />
+            <ToolButton label="Consumer" onClick={() => handleAddNode(StructType.Consumer)} isActive={false} icon={BadgeMinus} />
+            <ToolButton label="Converter" onClick={() => handleAddNode(StructType.Converter)} isActive={true} icon={Recycle} />
+            <ToolButton label="Gate" onClick={() => handleAddNode(StructType.Gate)} isActive={false} icon={ArrowLeftRight} />
+            <ToolButton label="Random" onClick={() => handleAddNode(StructType.Random)} isActive={false} icon={Dices} />
+            <ToolButton label="Delay" onClick={() => handleAddNode(StructType.Delay)} isActive={false} icon={Hourglass} />
+            <ToolButton label="Trigger" onClick={() => handleAddNode(StructType.Trigger)} isActive={false} icon={Webhook} />
+            <ToolButton label="End" onClick={() => handleAddNode(StructType.End)} isActive={false} icon={CheckCheck} />
           </div>
         )}
       </div>
@@ -85,11 +95,11 @@ export const Toolbar = ({ onAddNode }: ToolbarProps) => {
         </button>
         {isSpecOpen && (
           <div className="p-3 pt-0 grid grid-cols-3 gap-1 animate-in slide-in-from-top-1 duration-200">
-            <ToolButton label="Entity" onClick={() => onAddNode(StructType.Entity)} icon={Box} />
-            <ToolButton label="State" onClick={() => onAddNode(StructType.State)} icon={Layers} />
-            <ToolButton label="Event" onClick={() => onAddNode(StructType.Event)} icon={Zap} />
-            <ToolButton label="Rule" onClick={() => onAddNode(StructType.Rule)} icon={Scale} />
-            <ToolButton label="Operator" onClick={() => onAddNode(StructType.Operator)} icon={Sigma} />
+            <ToolButton label="Entity" onClick={() => handleAddNode(StructType.Entity)} icon={Box} />
+            <ToolButton label="State" onClick={() => handleAddNode(StructType.State)} icon={Layers} />
+            <ToolButton label="Event" onClick={() => handleAddNode(StructType.Event)} icon={Zap} />
+            <ToolButton label="Rule" onClick={() => handleAddNode(StructType.Rule)} icon={Scale} />
+            <ToolButton label="Operator" onClick={() => handleAddNode(StructType.Operator)} icon={Sigma} />
           </div>
         )}
       </div>
