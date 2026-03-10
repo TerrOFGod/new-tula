@@ -22,7 +22,8 @@ import {
   Eraser,
   Box, Layers, Zap, Scale, Sigma, Link2, Percent, GitMerge,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  CircleDot
 } from "lucide-react";
 import useStore, { RFState } from "@/app/store/store";
 import { shallow } from "zustand/shallow";
@@ -104,6 +105,12 @@ export const Toolbar = () => {
         <div className="text-xs font-semibold text-gray-500 mb-2 tracking-wider text-center">
           GENERAL
         </div>
+        <ToolButton
+          label="Empty (waypoint)"
+          onClick={() => addNode(StructType.Empty)}
+          isActive={false}
+          icon={CircleDot}
+        />
 
         <label>Edge type:</label>
         <Select value={edgeType} onValueChange={(value: any) => setEdgeType(value)}>

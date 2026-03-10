@@ -20,6 +20,7 @@ import ConditionalEdge from "../test/[boardId]/_components/_structs/edgeComponen
 import ProbabilisticEdge from "../test/[boardId]/_components/_structs/edgeComponents/probabilistic-edge";
 import TriggerEdge from "../test/[boardId]/_components/_structs/edgeComponents/trigger-edge";
 import ModifierEdge from "../test/[boardId]/_components/_structs/edgeComponents/modifier-edge";
+import EmptyNode from '../test/[boardId]/_components/_structs/nodeComponents/emptyNode';
 
 enum StructType {
   Source = "Source",
@@ -31,6 +32,7 @@ enum StructType {
   Delay = "Delay",
   Trigger = "Trigger",
   End = "End",
+  Empty = "Empty", 
     // Новые типы
   Entity = "Entity",
   State = "State",
@@ -123,6 +125,7 @@ export const nodeTypes = {
   delayNode: DelayNode,
   triggerNode: TriggerNode,
   endNode: EndNode,
+  emptyNode: EmptyNode,   // <-- новый тип
   entityNode: EntityNode,
   stateNode: StateNode,
   eventNode: EventNode,

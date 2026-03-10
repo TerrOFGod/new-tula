@@ -353,6 +353,13 @@ const useStore = createWithEqualityFn<WithLiveblocks<RFState>>()(
               data: { label: '0', struct: StructType.Trigger, name: '', triggerEvent: '' },
             };
             break;
+          case StructType.Empty:
+            newNode = {
+              ...baseNode,
+              type: 'emptyNode',
+              data: { label: '•', struct: StructType.Empty, name: '' },
+            };
+            break;
           case StructType.Entity:
             newNode = {
               ...baseNode,
