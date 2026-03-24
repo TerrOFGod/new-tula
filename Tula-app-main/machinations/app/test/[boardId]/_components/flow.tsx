@@ -25,7 +25,7 @@ import { Id } from "@/convex/_generated/dataModel";
 import { useSaveHandlerOnHotkeyKeydown } from "@/app/hooks/useSaveHandlerOnKeydown";
 import { HistoryModal } from "./HistoryModal";
 import { useInitializeBoard } from "@/app/hooks/useInitializeBoard";
-import { NodeDetailsPanel } from "@/components/NodeDetailsPanel";
+import { NodeDetailsPanel } from "@/components/details/NodeDetailsPanel";
 
 // const selector = (state: RFState) => ({
 //   nodes: state.nodes,
