@@ -42,6 +42,12 @@ export const NodeDetailsPanel = () => {
   useEffect(() => {
     if (nodeId) {
       const node = nodes.find((n) => n.id === nodeId);
+      const data = node?.data || {};
+      // Для entity инициализируем states и events, если их нет
+      if (node?.type === "entity") {
+        if (!data.states) data.states = [];
+        if (!data.events) data.events = [];
+      }
       setNodeData(node?.data || null);
       // Инициализируем вероятностные эффекты из данных узла
       if (node?.data?.probabilisticEffects) {
@@ -163,62 +169,384 @@ export const NodeDetailsPanel = () => {
     handleChange("enumValues", newArray);
   };
 
+    // Новые функции для работы с состояниями (states) как с объектами
+  const handleStateAdd = () => {
+    const current = nodeData.states || [];
+    const newState = {
+      id: crypto.randomUUID(),
+      name: "",
+      type: "int",
+      range: [0, 100],
+      enumValues: [],
+      listType: "",
+    };
+    handleChange("states", [...current, newState]);
+  };
+
+  const handleStateRemove = (id: string) => {
+    const current = nodeData.states || [];
+    handleChange("states", current.filter((s: any) => s.id !== id));
+  };
+
+  const handleStateChange = (id: string, field: string, value: any) => {
+    const current = nodeData.states || [];
+    const updated = current.map((s: any) =>
+      s.id === id ? { ...s, [field]: value } : s
+    );
+    handleChange("states", updated);
+  };
+
+  // Функции для работы с событиями (events) внутри entity
+  const handleEventAdd = () => {
+    const current = nodeData.events || [];
+    const newEvent = {
+      id: crypto.randomUUID(),
+      name: "",
+      requires: "",
+      effect: "",
+      probabilisticEffects: [],
+    };
+    handleChange("events", [...current, newEvent]);
+  };
+
+  const handleEventRemove = (id: string) => {
+    const current = nodeData.events || [];
+    handleChange("events", current.filter((e: any) => e.id !== id));
+  };
+
+  const handleEventChange = (id: string, field: string, value: any) => {
+    const current = nodeData.events || [];
+    const updated = current.map((e: any) =>
+      e.id === id ? { ...e, [field]: value } : e
+    );
+    handleChange("events", updated);
+  };
+
+  // Функции для вероятностных эффектов внутри события (аналогично отдельному event)
+  const handleEventProbEffectChange = (eventId: string, effectId: string, field: string, value: any) => {
+    const current = nodeData.events || [];
+    const updatedEvents = current.map((e: any) => {
+      if (e.id !== eventId) return e;
+      const newEffects = (e.probabilisticEffects || []).map((eff: any) =>
+        eff.id === effectId ? { ...eff, [field]: value } : eff
+      );
+      return { ...e, probabilisticEffects: newEffects };
+    });
+    handleChange("events", updatedEvents);
+  };
+
+  const addEventProbEffect = (eventId: string) => {
+    const current = nodeData.events || [];
+    const updatedEvents = current.map((e: any) => {
+      if (e.id !== eventId) return e;
+      const newEffect = {
+        id: crypto.randomUUID(),
+        effect: "",
+        probability: 0.5,
+      };
+      return { ...e, probabilisticEffects: [...(e.probabilisticEffects || []), newEffect] };
+    });
+    handleChange("events", updatedEvents);
+  };
+
+  const removeEventProbEffect = (eventId: string, effectId: string) => {
+    const current = nodeData.events || [];
+    const updatedEvents = current.map((e: any) => {
+      if (e.id !== eventId) return e;
+      return { ...e, probabilisticEffects: (e.probabilisticEffects || []).filter((eff: any) => eff.id !== effectId) };
+    });
+    handleChange("events", updatedEvents);
+  };
+
+
   // ========== Рендер полей по типу ==========
 
   const renderEntityFields = () => (
     <div className="space-y-6">
       <div className="space-y-2">
-        <Label htmlFor="name">Name</Label>
-        <Input id="name" value={nodeData.name || ""} onChange={(e) => handleChange("name", e.target.value)} />
+        <Label htmlFor="entity-name">Name</Label>
+        <Input
+          id="entity-name"
+          value={nodeData.name || ""}
+          onChange={(e) => handleChange("name", e.target.value)}
+        />
       </div>
 
-      {/* States */}
-      <div className="space-y-3">
-        <div className="flex justify-between items-center">
-          <Label>States</Label>
-          <Button variant="outline" size="sm" onClick={() => handleArrayAdd("states")}>
-            <PlusCircle className="h-4 w-4 mr-2" />
-            Add State
-          </Button>
-        </div>
-        {(nodeData.states || []).map((state: string, index: number) => (
-          <div key={index} className="flex items-center gap-2">
-            <GripVertical className="h-4 w-4 text-gray-400 cursor-move" />
-            <Input
-              value={state}
-              onChange={(e) => handleArrayChange("states", index, e.target.value)}
-              placeholder={`State ${index + 1}`}
-              className="flex-1"
-            />
-            <Button variant="ghost" size="icon" onClick={() => handleArrayRemove("states", index)}>
+    {/* States */}
+    <div className="space-y-3">
+      <div className="flex justify-between items-center">
+        <Label className="text-base font-semibold">States</Label>
+        <Button variant="outline" size="sm" onClick={handleStateAdd}>
+          <PlusCircle className="h-4 w-4 mr-2" />
+          Add State
+        </Button>
+      </div>
+      {(nodeData.states || []).map((state: any) => (
+        <Card
+          key={`${state.id}-${state.type}`} // <-- ключ включает тип, чтобы React пересоздавал карточку при смене типа
+          className="relative"
+        >
+          <CardHeader className="p-3 flex flex-row items-center justify-between">
+            <CardTitle className="text-sm">
+              {state.name || "New State"}
+            </CardTitle>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => handleStateRemove(state.id)}
+            >
               <Trash2 className="h-4 w-4" />
             </Button>
-          </div>
-        ))}
-      </div>
+          </CardHeader>
+          <CardContent className="p-3 pt-0 space-y-3">
+            <div className="space-y-1">
+              <Label className="text-xs">State Name</Label>
+              <Input
+                value={state.name}
+                onChange={(e) =>
+                  handleStateChange(state.id, "name", e.target.value)
+                }
+                placeholder="e.g., Health"
+                className="text-sm"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Type</Label>
+              <Select
+                value={state.type}
+                onValueChange={(v) =>
+                  handleStateChange(state.id, "type", v)
+                }
+              >
+                <SelectTrigger className="h-8">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="int">Integer</SelectItem>
+                  <SelectItem value="enum">Enumeration</SelectItem>
+                  <SelectItem value="list">List</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {state.type === "int" && (
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <Label className="text-xs">Min</Label>
+                  <Input
+                    type="number"
+                    value={state.range?.[0] ?? 0}
+                    onChange={(e) =>
+                      handleStateChange(state.id, "range", [
+                        parseInt(e.target.value) || 0,
+                        state.range?.[1] ?? 100,
+                      ])
+                    }
+                    className="h-8"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Max</Label>
+                  <Input
+                    type="number"
+                    value={state.range?.[1] ?? 100}
+                    onChange={(e) =>
+                      handleStateChange(state.id, "range", [
+                        state.range?.[0] ?? 0,
+                        parseInt(e.target.value) || 100,
+                      ])
+                    }
+                    className="h-8"
+                  />
+                </div>
+              </div>
+            )}
+            {state.type === "enum" && (
+              <div className="space-y-2">
+                <Label className="text-xs">Enum Values</Label>
+                {(state.enumValues || []).map((val: string, idx: number) => (
+                  <div
+                    key={`${state.id}-enum-${idx}`} // уникальный ключ
+                    className="flex items-center gap-2"
+                  >
+                    <Input
+                      value={val}
+                      onChange={(e) => {
+                        const newVals = [...(state.enumValues || [])];
+                        newVals[idx] = e.target.value;
+                        handleStateChange(state.id, "enumValues", newVals);
+                      }}
+                      placeholder={`Value ${idx + 1}`}
+                      className="text-sm flex-1"
+                    />
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => {
+                        const newVals = [...(state.enumValues || [])];
+                        newVals.splice(idx, 1);
+                        handleStateChange(state.id, "enumValues", newVals);
+                      }}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </div>
+                ))}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const newVals = [...(state.enumValues || []), ""];
+                    handleStateChange(state.id, "enumValues", newVals);
+                  }}
+                  className="w-full"
+                >
+                  <PlusCircle className="h-3 w-3 mr-1" />
+                  Add Value
+                </Button>
+              </div>
+            )}
+            {state.type === "list" && (
+              <div className="space-y-1">
+                <Label className="text-xs">List Type (Entity name)</Label>
+                <Input
+                  value={state.listType || ""}
+                  onChange={(e) =>
+                    handleStateChange(state.id, "listType", e.target.value)
+                  }
+                  placeholder="e.g., Card"
+                  className="text-sm"
+                />
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      ))}
+    </div>
 
       {/* Events */}
       <div className="space-y-3">
         <div className="flex justify-between items-center">
-          <Label>Events</Label>
-          <Button variant="outline" size="sm" onClick={() => handleArrayAdd("events")}>
+          <Label className="text-base font-semibold">Events</Label>
+          <Button variant="outline" size="sm" onClick={handleEventAdd}>
             <PlusCircle className="h-4 w-4 mr-2" />
             Add Event
           </Button>
         </div>
-        {(nodeData.events || []).map((event: string, index: number) => (
-          <div key={index} className="flex items-center gap-2">
-            <GripVertical className="h-4 w-4 text-gray-400 cursor-move" />
-            <Input
-              value={event}
-              onChange={(e) => handleArrayChange("events", index, e.target.value)}
-              placeholder={`Event ${index + 1}`}
-              className="flex-1"
-            />
-            <Button variant="ghost" size="icon" onClick={() => handleArrayRemove("events", index)}>
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          </div>
+        {(nodeData.events || []).map((event: any) => (
+          <Card key={event.id} className="relative">
+            <CardHeader className="p-3 flex flex-row items-center justify-between">
+              <CardTitle className="text-sm">
+                {event.name || "New Event"}
+              </CardTitle>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => handleEventRemove(event.id)}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </CardHeader>
+            <CardContent className="p-3 pt-0 space-y-3">
+              <div className="space-y-1">
+                <Label className="text-xs">Event Name</Label>
+                <Input
+                  value={event.name}
+                  onChange={(e) =>
+                    handleEventChange(event.id, "name", e.target.value)
+                  }
+                  placeholder="e.g., Attack"
+                  className="text-sm"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Requires (condition)</Label>
+                <Textarea
+                  value={event.requires || ""}
+                  onChange={(e) =>
+                    handleEventChange(event.id, "requires", e.target.value)
+                  }
+                  placeholder="e.g., Player.Mana >= 1"
+                  className="font-mono text-xs"
+                  rows={2}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Default Effect</Label>
+                <Textarea
+                  value={event.effect || ""}
+                  onChange={(e) =>
+                    handleEventChange(event.id, "effect", e.target.value)
+                  }
+                  placeholder="e.g., Target.Health -= Self.Attack"
+                  className="font-mono text-xs"
+                  rows={2}
+                />
+              </div>
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <Label className="text-xs">Probabilistic Effects</Label>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => addEventProbEffect(event.id)}
+                  >
+                    <PlusCircle className="h-3 w-3 mr-1" />
+                    Add Effect
+                  </Button>
+                </div>
+                {(event.probabilisticEffects || []).map((eff: any, idx: number) => (
+                  <div key={eff.id} className="border rounded-md p-2 space-y-2 bg-gray-50">
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs font-medium">Effect #{idx + 1}</span>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => removeEventProbEffect(event.id, eff.id)}
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Effect</Label>
+                      <Textarea
+                        value={eff.effect}
+                        onChange={(e) =>
+                          handleEventProbEffectChange(
+                            event.id,
+                            eff.id,
+                            "effect",
+                            e.target.value
+                          )
+                        }
+                        placeholder="e.g., Self.Health -= Target.Attack"
+                        className="font-mono text-xs"
+                        rows={2}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Probability (0-1)</Label>
+                      <Input
+                        type="number"
+                        min="0"
+                        max="1"
+                        step="0.1"
+                        value={eff.probability}
+                        onChange={(e) =>
+                          handleEventProbEffectChange(
+                            event.id,
+                            eff.id,
+                            "probability",
+                            parseFloat(e.target.value)
+                          )
+                        }
+                        className="h-8"
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
         ))}
       </div>
     </div>
