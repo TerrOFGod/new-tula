@@ -1,7 +1,7 @@
 // app/test/[boardId]/_components/_structs/trigger-edge.tsx
 import { useChangeEdgeType } from "@/app/store/use-custom-edge";
 import React, { useState } from "react";
-import { EdgeProps, getBezierPath, EdgeLabelRenderer, BaseEdge, getStraightPath, BezierEdge, StepEdge } from "reactflow";
+import { EdgeProps, getBezierPath, EdgeLabelRenderer, BaseEdge, getStraightPath, BezierEdge, StepEdge } from '@xyflow/react';
 
 export default function TriggerEdge(props: EdgeProps) {
     const {
@@ -22,7 +22,7 @@ export default function TriggerEdge(props: EdgeProps) {
         currentEdgesType: currentType,
     } = useChangeEdgeType();
 
-    const [eventName, setEventName] = useState(data.eventName || "");
+    const [eventName, setEventName] = useState(String(data.eventName) || "");
 
     const [edgePath, labelX, labelY] = getBezierPath({
         sourceX,

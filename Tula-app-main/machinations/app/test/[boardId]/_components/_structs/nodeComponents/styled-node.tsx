@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import "./nodeStyle.css";
 import { StructType } from "@/app/types/structs";
-import { Handle, Position, useNodeId } from "reactflow";
+import { Handle, Position, useNodeId } from '@xyflow/react';
 import { useState } from "react";
 import useStore from "@/app/store/store";
 
@@ -45,7 +45,7 @@ const styleNode: StructStyles = {
   Event: "eventNode",
   Rule: "ruleNode",
   Operator: "operatorNode",
-  Trigger: "triggerNode"
+  Trigger: "triggerNode",
 };
 
 const styleNodeIcon: any = {

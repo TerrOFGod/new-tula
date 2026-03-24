@@ -8,7 +8,7 @@ import {
   useEdges,
   useNodeId,
   useNodes,
-} from "reactflow";
+} from '@xyflow/react';
 import useStore from "@/app/store/store";
 import { StructType } from "@/app/types/structs";
 import { StyledNode } from "../styled-node";

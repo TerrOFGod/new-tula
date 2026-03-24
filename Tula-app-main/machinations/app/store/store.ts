@@ -10,7 +10,7 @@ import {
   applyEdgeChanges,
   addEdge,
   Connection,
-} from "reactflow";
+} from '@xyflow/react';
 import { liveblocks } from "@liveblocks/zustand";
 import type { WithLiveblocks } from "@liveblocks/zustand";
 import { nanoid } from "nanoid/non-secure";
@@ -44,6 +44,7 @@ export type RFState = {
   onDeleteVersion: (stateData: BoardStateData) => void;
   setSavingStatus: (savingStatus: BoardSavingStatus) => void;
   addNode: (struct: StructType) => void;
+  addChildNode: (struct: StructType, parentId: string, additionalData?: any) => void;
   deleteNode: (id: string) => void;
   onNodesChange: OnNodesChange;
   setNodeName: (id: string, name: string) => void;
@@ -52,7 +53,7 @@ export type RFState = {
   onEdgesChange: OnEdgesChange;
   getEdgeTargetNode: (id: string) => void;
   setEdgeType: (type: 'custom' | 'probabilistic' | 'conditional' | 'trigger' | 'modifier') => void;
-  setEdgeData: (id: string, data: number) => void;
+  setEdgeData: (id: string, data: any) => void;
   setEdgeAnimated: (isPlay: boolean) => void;
   onConnect: (connection: any) => void;
   getEdgeValues: (id: string) => {
@@ -152,7 +153,7 @@ const useStore = createWithEqualityFn<WithLiveblocks<RFState>>()(
       setEdgeType: (type) => set({ edgeType: type }),
       onConnect: (connection: Connection) => {
         const edgeType = get().edgeType;
-        const baseEdge = {
+        const baseEdge: Edge = {
           ...connection,
           id: "id" + new Date(),
           type: edgeType,
@@ -175,14 +176,14 @@ const useStore = createWithEqualityFn<WithLiveblocks<RFState>>()(
             newEdge = { ...baseEdge, data: { expression: '' } };
             break;
           default: // custom
-            newEdge = { ...baseEdge, data: 1 };
+            newEdge = { ...baseEdge, data: { value: 1 } };
         }
 
         set({
           edges: addEdge(newEdge, get().edges),
         });
       },
-      setEdgeData: (id: string, data: number) => {
+      setEdgeData: (id: string, data: any) => {
         const edges = useStore.getState().edges;
         const edgeIndex = edges.findIndex((edge) => edge.id === id);
 
@@ -407,6 +408,31 @@ const useStore = createWithEqualityFn<WithLiveblocks<RFState>>()(
           nodes: [...get().nodes, newNode],
         });
       },
+      addChildNode: (struct, parentId, additionalData = {}) => {
+        const parentNode = get().nodes.find(n => n.id === parentId);
+        if (!parentNode) return;
+
+        let baseNode: Node = {
+          id: nanoid(),
+          type: struct.toLowerCase() + "Node",
+          position: {
+            x: (Math.random() * 200) + 50, // относительная позиция внутри родителя
+            y: (Math.random() * 200) + 50,
+          },
+          parentId: parentId,
+          extent: "parent", // ограничивает перемещение внутри родителя
+          data: {
+            label: "0",
+            struct: struct,
+            name: "",
+            ...additionalData,
+          },
+        };
+
+        set({
+          nodes: [...get().nodes, baseNode],
+        });
+      },
       generateNode: (
         id: number,
         structString: string,
@@ -465,20 +491,22 @@ const useStore = createWithEqualityFn<WithLiveblocks<RFState>>()(
           type: "custom",
           animated: false,
           markerEnd: markerEnd,
-          data: value,
+          data: { value: value },
         };
-        set((state) => ({
+        set({
           edges: [...get().edges, newEdge],
-        }));
+        });
       },
       getNodesJson: () => {
         const arr = get().nodes.map((el) => {
+          let str = el.data.struct as string;
+          let lab = el.data.name as string;
           return `    {
           "id": "${el.id}",
           "element_type": "node",
           "type": "${el.type}",
-          "struct": "${el.data.struct.toLowerCase()}",
-          "label": "${el.data.name ? el.data.name.toLowerCase() : "null"}",
+          "struct": "${str.toLowerCase()}",
+          "label": "${el.data.name ? lab.toLowerCase() : "null"}",
           "position": {
             "data": {
               "x": ${el.position.x},

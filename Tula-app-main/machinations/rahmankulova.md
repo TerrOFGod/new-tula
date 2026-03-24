@@ -3617,7 +3617,7 @@ import {
   applyEdgeChanges,
   addEdge,
   Connection,
-} from "reactflow";
+} from '@xyflow/react';
 import { liveblocks } from "@liveblocks/zustand";
 import type { WithLiveblocks } from "@liveblocks/zustand";
 import { nanoid } from "nanoid/non-secure";
@@ -4251,7 +4251,7 @@ import {
   useEdges,
   useNodeId,
   useNodes,
-} from "reactflow";
+} from '@xyflow/react';
 import useStore from "@/app/store/store";
 import { StructType } from "@/app/types/structs";
 import { StyledNode } from "./styled-node";
@@ -4331,7 +4331,7 @@ export default memo(ConsumerNode);
 "use client";
 import { useAnimateScheme } from "@/app/store/use-animate-scheme";
 import { memo, useEffect } from "react";
-import { Edge, NodeResizer, useEdges, useNodeId, useNodes } from "reactflow";
+import { Edge, NodeResizer, useEdges, useNodeId, useNodes } from '@xyflow/react';
 import useStore from "@/app/store/store";
 import { StructType } from "@/app/types/structs";
 import { StyledNode } from "./styled-node";
@@ -4419,7 +4419,7 @@ import {
   useEdges,
   useNodeId,
   useNodes,
-} from "reactflow";
+} from '@xyflow/react';
 import useStore from "@/app/store/store";
 import { StructType } from "@/app/types/structs";
 import { StyledNode } from "./styled-node";
@@ -4498,7 +4498,7 @@ import {
   useEdges,
   useNodeId,
   useNodes,
-} from "reactflow";
+} from '@xyflow/react';
 import useStore from "@/app/store/store";
 import { StructType } from "@/app/types/structs";
 import { StyledNode } from "./styled-node";
@@ -4569,7 +4569,7 @@ export default memo(EndNode);
 ```tsx
 "use client";
 import { memo } from "react";
-import { NodeResizer } from "reactflow";
+import { NodeResizer } from '@xyflow/react';
 import { StructType } from "@/app/types/structs";
 import { StyledNode } from "./styled-node";
 
@@ -4610,7 +4610,7 @@ import {
   useEdges,
   useNodeId,
   useNodes,
-} from "reactflow";
+} from '@xyflow/react';
 import useStore from "@/app/store/store";
 import { StructType } from "@/app/types/structs";
 import { StyledNode } from "./styled-node";
@@ -4810,7 +4810,7 @@ import {
   useEdges,
   useNodeId,
   useNodes,
-} from "reactflow";
+} from '@xyflow/react';
 import useStore from "@/app/store/store";
 import { StructType } from "@/app/types/structs";
 import { StyledNode } from "./styled-node";
@@ -4883,7 +4883,7 @@ import {
   useEdges,
   useNodeId,
   useNodes,
-} from "reactflow";
+} from '@xyflow/react';
 import useStore from "@/app/store/store";
 import { StructType } from "@/app/types/structs";
 import { StyledNode } from "./styled-node";
@@ -4946,7 +4946,7 @@ export default memo(RandomNode);
 "use client";
 import { useAnimateScheme } from "@/app/store/use-animate-scheme";
 import { memo, useEffect } from "react";
-import { Edge, NodeResizer, useEdges, useNodeId, useNodes } from "reactflow";
+import { Edge, NodeResizer, useEdges, useNodeId, useNodes } from '@xyflow/react';
 import useStore from "@/app/store/store";
 import { StructType } from "@/app/types/structs";
 import { StyledNode } from "./styled-node";
@@ -5024,7 +5024,7 @@ import {
 } from "lucide-react";
 import "./nodeStyle.css";
 import { StructType } from "@/app/types/structs";
-import { Handle, Position, useNodeId } from "reactflow";
+import { Handle, Position, useNodeId } from '@xyflow/react';
 import { useState } from "react";
 import useStore from "@/app/store/store";
 
@@ -5113,7 +5113,7 @@ import {
   StepEdge,
   getBezierPath,
   getStraightPath,
-} from "reactflow";
+} from '@xyflow/react';
 
 export default function CustomEdge(props: EdgeProps) {
   const {
@@ -5221,7 +5221,7 @@ export default function CustomEdge(props: EdgeProps) {
 "use client";
 import { useAnimateScheme } from "@/app/store/use-animate-scheme";
 import { memo, useEffect } from "react";
-import { NodeResizer, useEdges, useNodeId } from "reactflow";
+import { NodeResizer, useEdges, useNodeId } from '@xyflow/react';
 import useStore from "@/app/store/store";
 import { StyledNode } from "./nodeComponents/styled-node";
 import { StructType } from "@/app/types/structs";
@@ -6334,7 +6334,7 @@ export { HistoryItem } from "./HistoryItem";
 ```tsx
 "use client";
 import { FC, useCallback, useEffect, useMemo, useState } from "react";
-import { Panel } from "reactflow";
+import { Panel } from '@xyflow/react';
 import { AArrowDown, AArrowUp, CalendarDays } from "lucide-react";
 import { useConvex, useQuery } from "convex/react";
 import { toast } from "sonner";
@@ -6830,7 +6830,7 @@ export const CircleChart: FC<{ value: number }> = ({ value }) => {
 ```tsx
 "use client";
 
-import { Panel } from "reactflow";
+import { Panel } from '@xyflow/react';
 import { useChangeEdgeType } from "@/app/store/use-custom-edge";
 import React from "react";
 import {
@@ -7064,7 +7064,7 @@ export const MetricsData: FC<MetricsDta> = ({
 ## app\test\[boardId]\_components\panels\bottom-panel.tsx
 
 ```tsx
-import { Panel, useEdges, useNodes } from "reactflow";
+import { Panel, useEdges, useNodes } from '@xyflow/react';
 import { ToolButton } from "../ui/ToolButton";
 import { Play, RotateCcw, Pause } from "lucide-react";
 import CustomInput from "../ui/CustomInput";
@@ -7526,7 +7526,7 @@ import {
   getTransformForBounds,
   useReactFlow,
   getRectOfNodes,
-} from "reactflow";
+} from '@xyflow/react';
 import { ToolButton } from "./ToolButton";
 import { Download } from "lucide-react";
 
@@ -7638,7 +7638,7 @@ export const ToolButton = ({
 
 ```tsx
 import React, { useCallback } from "react";
-import { Node, useReactFlow } from "reactflow";
+import { Node, useReactFlow } from '@xyflow/react';
 import "./../style-test.css"
 import { useChangeEdgeType } from "@/app/store/use-custom-edge";
 
@@ -7759,8 +7759,8 @@ Cursor.displayName = "Cursor";
 
 ```tsx
 "use client";
-import "reactflow/dist/style.css";
-import ReactFlow, { Controls, Background, Panel } from "reactflow";
+import "@xyflow/react/dist/style.css";
+import ReactFlow, { Controls, Background, Panel } from '@xyflow/react';
 // import { shallow } from "zustand/shallow";
 import { useMyPresence, useOthers } from "@/liveblocks.config";
 import { Cursor } from "./cursor";
@@ -8170,7 +8170,7 @@ import {
   useEdges,
   useNodeId,
   useNodes,
-} from "reactflow";
+} from '@xyflow/react';
 import useStore from "@/app/store/store";
 import { StructType } from "@/app/types/structs";
 import { StyledNode } from "./styled-node";
@@ -8250,7 +8250,7 @@ export default memo(ConsumerNode);
 "use client";
 import { useAnimateScheme } from "@/app/store/use-animate-scheme";
 import { memo, useEffect } from "react";
-import { Edge, NodeResizer, useEdges, useNodeId, useNodes } from "reactflow";
+import { Edge, NodeResizer, useEdges, useNodeId, useNodes } from '@xyflow/react';
 import useStore from "@/app/store/store";
 import { StructType } from "@/app/types/structs";
 import { StyledNode } from "./styled-node";
@@ -8338,7 +8338,7 @@ import {
   useEdges,
   useNodeId,
   useNodes,
-} from "reactflow";
+} from '@xyflow/react';
 import useStore from "@/app/store/store";
 import { StructType } from "@/app/types/structs";
 import { StyledNode } from "./styled-node";
@@ -8417,7 +8417,7 @@ import {
   useEdges,
   useNodeId,
   useNodes,
-} from "reactflow";
+} from '@xyflow/react';
 import useStore from "@/app/store/store";
 import { StructType } from "@/app/types/structs";
 import { StyledNode } from "./styled-node";
@@ -8496,7 +8496,7 @@ import {
   useEdges,
   useNodeId,
   useNodes,
-} from "reactflow";
+} from '@xyflow/react';
 import useStore from "@/app/store/store";
 import { StructType } from "@/app/types/structs";
 import { StyledNode } from "./styled-node";
@@ -8696,7 +8696,7 @@ import {
   useEdges,
   useNodeId,
   useNodes,
-} from "reactflow";
+} from '@xyflow/react';
 import useStore from "@/app/store/store";
 import { StructType } from "@/app/types/structs";
 import { StyledNode } from "./styled-node";
@@ -8769,7 +8769,7 @@ import {
   useEdges,
   useNodeId,
   useNodes,
-} from "reactflow";
+} from '@xyflow/react';
 import useStore from "@/app/store/store";
 import { StructType } from "@/app/types/structs";
 import { StyledNode } from "./styled-node";
@@ -8832,7 +8832,7 @@ export default memo(RandomNode);
 "use client";
 import { useAnimateScheme } from "@/app/store/use-animate-scheme";
 import { memo, useEffect } from "react";
-import { Edge, NodeResizer, useEdges, useNodeId, useNodes } from "reactflow";
+import { Edge, NodeResizer, useEdges, useNodeId, useNodes } from '@xyflow/react';
 import useStore from "@/app/store/store";
 import { StructType } from "@/app/types/structs";
 import { StyledNode } from "./styled-node";
@@ -8910,7 +8910,7 @@ import {
 } from "lucide-react";
 import "./nodeStyle.css";
 import { StructType } from "@/app/types/structs";
-import { Handle, Position, useNodeId } from "reactflow";
+import { Handle, Position, useNodeId } from '@xyflow/react';
 import { useState } from "react";
 import useStore from "@/app/store/store";
 
@@ -8999,7 +8999,7 @@ import {
   StepEdge,
   getBezierPath,
   getStraightPath,
-} from "reactflow";
+} from '@xyflow/react';
 
 export default function CustomEdge(props: EdgeProps) {
   const {
@@ -9107,7 +9107,7 @@ export default function CustomEdge(props: EdgeProps) {
 "use client";
 import { useAnimateScheme } from "@/app/store/use-animate-scheme";
 import { memo, useEffect } from "react";
-import { NodeResizer, useEdges, useNodeId } from "reactflow";
+import { NodeResizer, useEdges, useNodeId } from '@xyflow/react';
 import useStore from "@/app/store/store";
 import { StyledNode } from "./nodeComponents/styled-node";
 import { StructType } from "@/app/types/structs";
@@ -10220,7 +10220,7 @@ export { HistoryItem } from "./HistoryItem";
 ```tsx
 "use client";
 import { FC, useCallback, useEffect, useMemo, useState } from "react";
-import { Panel } from "reactflow";
+import { Panel } from '@xyflow/react';
 import { AArrowDown, AArrowUp, CalendarDays } from "lucide-react";
 import { useConvex, useQuery } from "convex/react";
 import { toast } from "sonner";
@@ -10716,7 +10716,7 @@ export const CircleChart: FC<{ value: number }> = ({ value }) => {
 ```tsx
 "use client";
 
-import { Panel } from "reactflow";
+import { Panel } from '@xyflow/react';
 import { useChangeEdgeType } from "@/app/store/use-custom-edge";
 import React from "react";
 import {
@@ -10950,7 +10950,7 @@ export const MetricsData: FC<MetricsDta> = ({
 ## _components\panels\bottom-panel.tsx
 
 ```tsx
-import { Panel, useEdges, useNodes } from "reactflow";
+import { Panel, useEdges, useNodes } from '@xyflow/react';
 import { ToolButton } from "../ui/ToolButton";
 import { Play, RotateCcw, Pause } from "lucide-react";
 import CustomInput from "../ui/CustomInput";
@@ -11412,7 +11412,7 @@ import {
   getTransformForBounds,
   useReactFlow,
   getRectOfNodes,
-} from "reactflow";
+} from '@xyflow/react';
 import { ToolButton } from "./ToolButton";
 import { Download } from "lucide-react";
 
@@ -11524,7 +11524,7 @@ export const ToolButton = ({
 
 ```tsx
 import React, { useCallback } from "react";
-import { Node, useReactFlow } from "reactflow";
+import { Node, useReactFlow } from '@xyflow/react';
 import "./../style-test.css"
 import { useChangeEdgeType } from "@/app/store/use-custom-edge";
 
@@ -11645,8 +11645,8 @@ Cursor.displayName = "Cursor";
 
 ```tsx
 "use client";
-import "reactflow/dist/style.css";
-import ReactFlow, { Controls, Background, Panel } from "reactflow";
+import "@xyflow/react/dist/style.css";
+import ReactFlow, { Controls, Background, Panel } from '@xyflow/react';
 // import { shallow } from "zustand/shallow";
 import { useMyPresence, useOthers } from "@/liveblocks.config";
 import { Cursor } from "./cursor";
@@ -12262,7 +12262,7 @@ export type Layer = RectangleLayer | EllipseLayer | PathLayer | TextLayer | Note
 ## app\types\history.ts
 
 ```ts
-import { Node, Edge } from "reactflow";
+import { Node, Edge } from '@xyflow/react';
 
 export type BoardState = {
   title: string;
@@ -12292,7 +12292,7 @@ export enum BoardSavingStatus {
 ## app\types\structs.ts
 
 ```ts
-import { Node } from "reactflow";
+import { Node } from '@xyflow/react';
 import CustomEdge from "../test/[boardId]/_components/_structs/custom-edge";
 import CustomNode from "./../test/[boardId]/_components/_structs/custom-node";
 import SourceNode from "./../test/[boardId]/_components/_structs/nodeComponents/sourceNode";
@@ -13982,7 +13982,7 @@ export const httpAction = httpActionGeneric;
 
 ```ts
 import { Infer, v } from "convex/values";
-import { MarkerType } from "reactflow";
+import { MarkerType } from '@xyflow/react';
 
 export const boardEdgesTypeValue = v.union(
   v.literal("Default"),
@@ -15209,7 +15209,7 @@ export const ModalProvider = () => {
 ## utils\adapters.ts
 
 ```ts
-import { Node, Edge, MarkerType } from "reactflow";
+import { Node, Edge, MarkerType } from '@xyflow/react';
 import {
   TNodeValue,
   TEdgeValue,
@@ -15296,7 +15296,7 @@ import {
   XYWH
 } from "@/app/types/canvas";
 import { type ClassValue, clsx } from "clsx"
-import { MarkerType } from "reactflow";
+import { MarkerType } from '@xyflow/react';
 import { twMerge } from "tailwind-merge"
 
 export function cn(...inputs: ClassValue[]) {
@@ -15655,7 +15655,7 @@ import {
 } from "@liveblocks/client";
 import { createLiveblocksContext, createRoomContext } from "@liveblocks/react";
 import { Color, Layer } from "./app/types/canvas";
-import { Node } from "reactflow";
+import { Node } from '@xyflow/react';
 
 export const client = createClient({
   // publicApiKey: process.env.NEXT_PUBLIC_LIVEBLOCKS_PUBLIC_KEY! as string,

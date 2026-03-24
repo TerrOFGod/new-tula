@@ -1,7 +1,7 @@
 // app/test/[boardId]/_components/_structs/modifier-edge.tsx
 import { useChangeEdgeType } from "@/app/store/use-custom-edge";
 import React, { useState } from "react";
-import { EdgeProps, getBezierPath, EdgeLabelRenderer, BaseEdge, getStraightPath, BezierEdge, StepEdge } from "reactflow";
+import { EdgeProps, getBezierPath, EdgeLabelRenderer, BaseEdge, getStraightPath, BezierEdge, StepEdge } from '@xyflow/react';
 
 export default function ModifierEdge(props: EdgeProps) {
     const {
@@ -22,7 +22,7 @@ export default function ModifierEdge(props: EdgeProps) {
         currentEdgesType: currentType,
     } = useChangeEdgeType();
 
-    const [expression, setExpression] = useState(data.expression || "");
+    const [expression, setExpression] = useState(String(data.expression) || "");
 
     const [edgePath, labelX, labelY] = getBezierPath({
         sourceX,

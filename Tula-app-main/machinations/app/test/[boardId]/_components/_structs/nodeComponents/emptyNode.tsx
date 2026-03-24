@@ -1,7 +1,7 @@
 // app/test/[boardId]/_components/_structs/nodeComponents/emptyNode.tsx
 "use client";
 import { memo } from 'react';
-import { Handle, Position, NodeResizer } from 'reactflow';
+import { Handle, Position, NodeResizer } from '@xyflow/react';
 
 interface EmptyNodeProps {
   data: {

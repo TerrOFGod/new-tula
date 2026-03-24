@@ -2,7 +2,7 @@ import {
   getTransformForBounds,
   useReactFlow,
   getRectOfNodes,
-} from "reactflow";
+} from '@xyflow/react';
 import { ToolButton } from "./ToolButton";
 import { Download } from "lucide-react";
 

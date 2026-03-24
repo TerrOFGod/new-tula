@@ -10,7 +10,7 @@ import {
   StepEdge,
   getBezierPath,
   getStraightPath,
-} from "reactflow";
+} from '@xyflow/react';
 
 export default function CustomEdge(props: EdgeProps) {
   const {
@@ -29,10 +29,10 @@ export default function CustomEdge(props: EdgeProps) {
     targetY,
     targetPosition,
     id,
-    data: initalValue,
+    data,
   } = props;
 
-  const [inputValue, setInputValue] = useState<number>(initalValue ?? 1);
+  const [inputValue, setInputValue] = useState<number>(Number(data?.value) ?? 1);
   const [edgePath, labelX, labelY] = getBezierPath({
     sourceX,
     sourceY,
@@ -73,7 +73,7 @@ export default function CustomEdge(props: EdgeProps) {
       setError(null);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initalValue]);
+  }, [data?.value]);
 
   return (
     <>

@@ -1,6 +1,6 @@
 "use client";
 
-import { Panel } from "reactflow";
+import { Panel } from '@xyflow/react';
 import { useChangeEdgeType } from "@/app/store/use-custom-edge";
 import React from "react";
 import {

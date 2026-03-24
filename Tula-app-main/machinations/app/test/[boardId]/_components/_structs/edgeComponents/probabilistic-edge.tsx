@@ -1,6 +1,6 @@
 import { useChangeEdgeType } from "@/app/store/use-custom-edge";
 import React, { useState } from "react";
-import { EdgeProps, getBezierPath, EdgeLabelRenderer, getStraightPath, BaseEdge, BezierEdge, StepEdge } from "reactflow";
+import { EdgeProps, getBezierPath, EdgeLabelRenderer, getStraightPath, BaseEdge, BezierEdge, StepEdge } from '@xyflow/react';
 
 export default function ProbabilisticEdge(props: EdgeProps) {
   const {
@@ -21,7 +21,7 @@ export default function ProbabilisticEdge(props: EdgeProps) {
     currentEdgesType: currentType,
   } = useChangeEdgeType();
 
-  const [probability, setProbability] = useState(data.probability || 0.5);
+  const [probability, setProbability] = useState(Number(data.probability) || 0.5);
 
   const [edgePath, labelX, labelY] = getBezierPath({
     sourceX,

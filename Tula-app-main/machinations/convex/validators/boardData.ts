@@ -1,5 +1,5 @@
 import { Infer, v } from "convex/values";
-import { MarkerType } from "reactflow";
+import { MarkerType } from '@xyflow/react';
 
 export const boardEdgesTypeValue = v.union(
   v.literal("Default"),

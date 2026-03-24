@@ -1,7 +1,7 @@
 "use client";
 import { useAnimateScheme } from "@/app/store/use-animate-scheme";
 import { memo, useEffect } from "react";
-import { NodeResizer, useEdges, useNodeId } from "reactflow";
+import { NodeResizer, useEdges, useNodeId } from '@xyflow/react';
 import useStore from "@/app/store/store";
 import { StyledNode } from "./nodeComponents/styled-node";
 import { StructType } from "@/app/types/structs";

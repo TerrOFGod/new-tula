@@ -1,7 +1,7 @@
 "use client";
 import { useAnimateScheme } from "@/app/store/use-animate-scheme";
 import { memo, useEffect } from "react";
-import { Edge, NodeResizer, useEdges, useNodeId, useNodes } from "reactflow";
+import { Edge, NodeResizer, useEdges, useNodeId, useNodes } from '@xyflow/react';
 import useStore from "@/app/store/store";
 import { StructType } from "@/app/types/structs";
 import { StyledNode } from "../styled-node";
@@ -90,7 +90,7 @@ const SourceNode = ({ id, data, selected }: DataProps) => {
         let initialData = 0;
 
         const intervalId = setInterval(() => {
-          initialData += +edge.data;
+          initialData += +edge.data?.value!;
           setNodeLabel(targetNode?.id!, +initialData);
         }, time * 1000);
 

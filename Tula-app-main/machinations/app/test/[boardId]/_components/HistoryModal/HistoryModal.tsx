@@ -1,6 +1,6 @@
 "use client";
 import { FC, useCallback, useEffect, useMemo, useState } from "react";
-import { Panel } from "reactflow";
+import { Panel } from '@xyflow/react';
 import { AArrowDown, AArrowUp, CalendarDays } from "lucide-react";
 import { useConvex, useQuery } from "convex/react";
 import { toast } from "sonner";

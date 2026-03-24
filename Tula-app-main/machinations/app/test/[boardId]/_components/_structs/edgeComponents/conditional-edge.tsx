@@ -1,7 +1,7 @@
 import { useChangeEdgeType } from "@/app/store/use-custom-edge";
 import path from "path";
 import React, { useState } from "react";
-import { EdgeProps, getBezierPath, EdgeLabelRenderer, getStraightPath, BaseEdge, BezierEdge, StepEdge } from "reactflow";
+import { EdgeProps, getBezierPath, EdgeLabelRenderer, getStraightPath, BaseEdge, BezierEdge, StepEdge } from '@xyflow/react';
 
 export default function ConditionalEdge(props: EdgeProps) {
   const {
@@ -15,7 +15,7 @@ export default function ConditionalEdge(props: EdgeProps) {
     style,
     id,
   } = props;
-  const [condition, setCondition] = useState(data.condition || "");
+  const [condition, setCondition] = useState(String(data?.condition) || "");
 
   const {
     error,

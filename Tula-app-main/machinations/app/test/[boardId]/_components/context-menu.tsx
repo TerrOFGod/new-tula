@@ -1,5 +1,5 @@
 import React, { useCallback } from "react";
-import { Node, useReactFlow } from "reactflow";
+import { Node, useReactFlow } from '@xyflow/react';
 import "./../style-test.css"
 import { useChangeEdgeType } from "@/app/store/use-custom-edge";
 

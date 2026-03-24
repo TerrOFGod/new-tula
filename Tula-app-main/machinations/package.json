@@ -24,6 +24,7 @@
     "@radix-ui/react-tooltip": "^1.0.7",
     "@types/deep-diff": "^1.0.5",
     "@types/react-datepicker": "^7.0.0",
+    "@xyflow/react": "^12.10.1",
     "chalk": "^4.1.2",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.0",

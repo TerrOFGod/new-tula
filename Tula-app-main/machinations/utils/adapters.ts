@@ -1,4 +1,4 @@
-import { Node, Edge, MarkerType } from "reactflow";
+import { Node, Edge, MarkerType } from '@xyflow/react';
 import {
   TNodeValue,
   TEdgeValue,

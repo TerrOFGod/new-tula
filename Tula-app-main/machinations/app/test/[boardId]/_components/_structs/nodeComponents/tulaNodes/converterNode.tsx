@@ -1,7 +1,7 @@
 "use client";
 import { useAnimateScheme } from "@/app/store/use-animate-scheme";
 import { memo, useEffect } from "react";
-import { Edge, NodeResizer, useEdges, useNodeId, useNodes } from "reactflow";
+import { Edge, NodeResizer, useEdges, useNodeId, useNodes } from '@xyflow/react';
 import useStore from "@/app/store/store";
 import { StructType } from "@/app/types/structs";
 import { StyledNode } from "../styled-node";
@@ -55,7 +55,7 @@ const ConverterNode = ({ id, data, selected, }: DataProps) => {
     }
 
       const sumOfData = newEdges.reduce((accumulator, currentEdge) => {
-        return accumulator + (+currentEdge.data || 0); 
+        return accumulator + (+currentEdge.data?.value! || 0); 
       }, 0);
       intervalId = setInterval(() => {
 

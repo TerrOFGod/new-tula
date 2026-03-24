@@ -1,6 +1,6 @@
 "use client";
 import { memo } from "react";
-import { Handle, Position, NodeResizer } from "reactflow";
+import { Handle, Position, NodeResizer } from '@xyflow/react';
 import { StructType } from "@/app/types/structs";
 import { useNodeDetails } from "@/app/store/use-node-details";
 

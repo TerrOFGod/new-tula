@@ -9,7 +9,7 @@ import {
   XYWH
 } from "@/app/types/canvas";
 import { type ClassValue, clsx } from "clsx"
-import { MarkerType } from "reactflow";
+import { MarkerType } from '@xyflow/react';
 import { twMerge } from "tailwind-merge"
 
 export function cn(...inputs: ClassValue[]) {

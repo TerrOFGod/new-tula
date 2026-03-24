@@ -1,4 +1,4 @@
-import { Panel, useEdges, useNodes } from "reactflow";
+import { Panel, useEdges, useNodes } from '@xyflow/react';
 import { ToolButton } from "../ui/ToolButton";
 import { Play, RotateCcw, Pause } from "lucide-react";
 import CustomInput from "../ui/CustomInput";

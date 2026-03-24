@@ -8,7 +8,7 @@ import {
   useEdges,
   useNodeId,
   useNodes,
-} from "reactflow";
+} from '@xyflow/react';
 import useStore from "@/app/store/store";
 import { StructType } from "@/app/types/structs";
 import { StyledNode } from "../styled-node";
@@ -43,11 +43,11 @@ const ConsumerNode = ({
       setNodeLabel(nodeId, 0);
     } else {
       setNodeLabel(nodeId, 1);
-      let sourceEdge: Edge<Number> = edges.find(
+      let sourceEdge: Edge = edges.find(
         (edge) => edge?.target === nodeId
       )!;
       // тут в sourceEdge.data хранится значение количество ресурсов
-      let targetEdge: Edge<Number> = edges.find(
+      let targetEdge: Edge = edges.find(
         (edge) => edge?.source === nodeId
       )!;
 

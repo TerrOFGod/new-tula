@@ -6,7 +6,7 @@ import {
 } from "@liveblocks/client";
 import { createLiveblocksContext, createRoomContext } from "@liveblocks/react";
 import { Color, Layer } from "./app/types/canvas";
-import { Node } from "reactflow";
+import { Node } from '@xyflow/react';
 
 export const client = createClient({
   // publicApiKey: process.env.NEXT_PUBLIC_LIVEBLOCKS_PUBLIC_KEY! as string,

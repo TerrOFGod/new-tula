@@ -1,4 +1,4 @@
-import { Node } from "reactflow";
+import { Node } from '@xyflow/react';
 import CustomEdge from "../test/[boardId]/_components/_structs/edgeComponents/custom-edge";
 import CustomNode from "./../test/[boardId]/_components/_structs/custom-node";
 import SourceNode from "../test/[boardId]/_components/_structs/nodeComponents/tulaNodes/sourceNode";

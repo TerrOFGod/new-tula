@@ -1,6 +1,5 @@
 "use client";
-import "reactflow/dist/style.css";
-import ReactFlow, { Controls, Background, Panel } from "reactflow";
+import  { ReactFlow, Controls, Background, Panel } from '@xyflow/react';
 // import { shallow } from "zustand/shallow";
 import { useMyPresence, useOthers } from "@/liveblocks.config";
 import { Cursor } from "./cursor";
@@ -9,7 +8,7 @@ import { BottomPanel } from "./panels/bottom-panel";
 import { DownloadBtn } from "./ui/DownloadBtn";
 import useStore, { RFState } from "@/app/store/store";
 import { edgeTypes, nodeTypes } from "@/app/types/structs";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import ContextMenu from "./context-menu";
 import { useChangeEdgeType } from "@/app/store/use-custom-edge";
 import { Metrics } from "./metrics/metrics";
@@ -26,6 +25,10 @@ import { useSaveHandlerOnHotkeyKeydown } from "@/app/hooks/useSaveHandlerOnKeydo
 import { HistoryModal } from "./HistoryModal";
 import { useInitializeBoard } from "@/app/hooks/useInitializeBoard";
 import { NodeDetailsPanel } from "@/components/NodeDetailsPanel";
+import { useEntityExpanded } from "@/app/store/use-entity-expanded";
+
+import "@xyflow/react/dist/style.css";
+import '@xyflow/react/dist/base.css';
 
 // const selector = (state: RFState) => ({
 //   nodes: state.nodes,
@@ -50,6 +53,7 @@ interface IContextMenu {
 
 const Flow = ({ boardId }: FlowProps) => {
   useInitializeBoard(boardId as Id<"boards">);
+  const { expanded } = useEntityExpanded();
 
   const {
     liveblocks: { isStorageLoading },

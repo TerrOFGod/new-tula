@@ -1,16 +1,17 @@
 "use client";
 import { memo, useState } from "react";
-import { Handle, Position, NodeResizer } from "reactflow";
+import { Handle, Position, NodeResizer } from '@xyflow/react';
 import { useNodeDetails } from "@/app/store/use-node-details";
 import { StructType } from "@/app/types/structs";
+import { ChevronDown, ChevronRight } from "lucide-react";
 
 interface EntityNodeProps {
   data: {
     label: string;
     struct: StructType;
     name?: string;
-    states?: string[];
-    events?: string[];
+    states?: any[];
+    events?: any[];
   };
   selected: boolean;
   id: string;
@@ -34,7 +35,9 @@ const EntityNode = memo(({ data, selected, id }: EntityNodeProps) => {
         padding: '10px',
         background: '#f0f8ff'
       }}>
-        <div style={{ fontWeight: 'bold' }}>{name || label}</div>
+        <div style={{ fontWeight: "bold", display: "flex", alignItems: "center" }}>
+          {name || label}
+        </div>
         {isHovered && (
           <div style={{ fontSize: '0.8rem', color: '#666' }}>
             {states?.length || 0} states, {events?.length || 0} events
