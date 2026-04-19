@@ -1,5 +1,6 @@
 "use client";
 
+import { useSearchParams } from 'next/navigation'
 import { EmptyBoard } from "./empty-board";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
@@ -15,20 +16,26 @@ interface BoardListProps {
 }
 
 export const BoardList = ({ orgId, query }: BoardListProps) => {
+
+  const searchParams = useSearchParams()
+  const search = searchParams.get('search') ?? ""
+  const favorites = searchParams.get('favorites') ?? undefined
+
   const data = useQuery(api.boards.get, {
     orgId,
-    ...query,
+    search, 
+    favorites
   });
 
   if (data === undefined) {
     return <div>Loading...</div>;
   }
 
-  if (!data?.length && query.search) {
+  if (!data?.length && search) {
     return <div>Try searching for something else</div>;
   }
 
-  if (!data?.length && query.favorites) {
+  if (!data?.length && favorites) {
     return <div>No favorites</div>;
   }
 
@@ -39,7 +46,7 @@ export const BoardList = ({ orgId, query }: BoardListProps) => {
   return (
     <div>
       <h2 className="text-3xl">
-        {query.favorites ? "Favorite boards" : "Team boards"}
+        {favorites ? "Favorite boards" : "Team boards"}
       </h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-5 mt-8 pb-10">
         <NewBoardButton orgId={orgId} />

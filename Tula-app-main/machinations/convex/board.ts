@@ -22,10 +22,12 @@ export const create = mutation({
       throw new Error("Unauthorized");
     }
 
+    const authorName = identity.name ?? identity.email ?? "Anonymous";
+
     const boardId = await ctx.db.insert("boards", {
       orgId: args.orgId,
       authorId: identity.subject,
-      authorName: identity.name!,
+      authorName,
       imageUrl: "/placeholders/example.png",
       title: args.title,
       description: "",
