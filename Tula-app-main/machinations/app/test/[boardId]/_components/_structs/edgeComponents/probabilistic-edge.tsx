@@ -1,5 +1,7 @@
 import { useChangeEdgeType } from "@/app/store/use-custom-edge";
 import React, { useState } from "react";
+import { SimulationEdgeStats } from "@/app/test/[boardId]/_components/simulation/SimulationEdgeStats";
+import { useSimulationResults } from "@/app/store/use-simulation-results";
 import { EdgeProps, getBezierPath, EdgeLabelRenderer, getStraightPath, BaseEdge, BezierEdge, StepEdge } from "reactflow";
 
 export default function ProbabilisticEdge(props: EdgeProps) {
@@ -13,6 +15,8 @@ export default function ProbabilisticEdge(props: EdgeProps) {
     data = {},
     style,
     id,
+    source,
+    target,
   } = props;
 
   const {
@@ -22,6 +26,22 @@ export default function ProbabilisticEdge(props: EdgeProps) {
   } = useChangeEdgeType();
 
   const [probability, setProbability] = useState(data.probability || 0.5);
+  const transitionProbability = useSimulationResults((state) =>
+    state.getEdgeTransition(source, target)
+  );
+  const isMarkovActive = useSimulationResults(
+    (state) => state.isActive && state.mode === "MARKOV_CHAIN"
+  );
+  const edgeStrokeWidth =
+    isMarkovActive && transitionProbability !== undefined
+      ? 1.5 + transitionProbability * 4
+      : 2;
+  const edgeVisualStyle = {
+    ...style,
+    stroke: isMarkovActive && transitionProbability !== undefined ? "#7c3aed" : "#ff6b6b",
+    strokeWidth: edgeStrokeWidth,
+    strokeDasharray: "5,5",
+  };
 
   const [edgePath, labelX, labelY] = getBezierPath({
     sourceX,
@@ -48,9 +68,9 @@ export default function ProbabilisticEdge(props: EdgeProps) {
 
   return (
     <>
-      {currentType === "SmoothStep" && <StepEdge {...props}  style={{ ...style, stroke: '#ff6b6b', strokeWidth: 2, strokeDasharray: '5,5' }}/>}
-      {currentType === "Default" && <BaseEdge path={basePath} {...props}  style={{ ...style, stroke: '#ff6b6b', strokeWidth: 2, strokeDasharray: '5,5' }}/>}
-      {currentType == "Bezier" && <BezierEdge {...props}  style={{ ...style, stroke: '#ff6b6b', strokeWidth: 2, strokeDasharray: '5,5' }}/>}
+      {currentType === "SmoothStep" && <StepEdge {...props} style={edgeVisualStyle} />}
+      {currentType === "Default" && <BaseEdge path={basePath} {...props} style={edgeVisualStyle} />}
+      {currentType == "Bezier" && <BezierEdge {...props} style={edgeVisualStyle} />}
 
       <EdgeLabelRenderer>
         <div
@@ -76,6 +96,12 @@ export default function ProbabilisticEdge(props: EdgeProps) {
             style={{ width: '50px', border: "none", outline: "none" }}
           />
         </div>
+        <SimulationEdgeStats
+          sourceId={source}
+          targetId={target}
+          labelX={labelX}
+          labelY={labelY}
+        />
       </EdgeLabelRenderer>
     </>
   );

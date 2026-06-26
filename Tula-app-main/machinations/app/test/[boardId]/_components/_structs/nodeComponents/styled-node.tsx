@@ -15,6 +15,8 @@ import { StructType } from "@/app/types/structs";
 import { Handle, Position, useNodeId } from "reactflow";
 import { useState } from "react";
 import useStore from "@/app/store/store";
+import { SimulationNodeStats, useSimulationNodeHighlight } from "@/app/test/[boardId]/_components/simulation/SimulationNodeStats";
+import { cn } from "@/utils/canvas";
 
 interface ITestNodeProps {
   struct: StructType;
@@ -62,6 +64,7 @@ const styleNodeIcon: any = {
 export const StyledNode = ({ struct, label, name, info }: ITestNodeProps) => {
   const { setNodeName } = useStore();
   const nodeId = useNodeId();
+  const isHighlighted = useSimulationNodeHighlight(nodeId!);
 
   const [value, setValue] = useState(name);
   const onChange = (event: any) => {
@@ -70,7 +73,14 @@ export const StyledNode = ({ struct, label, name, info }: ITestNodeProps) => {
   };
 
   return (
-    <div>
+    <div
+      className={cn(
+        "simulation-node-wrapper",
+        isHighlighted && "simulation-node-highlight"
+      )}
+    >
+      <SimulationNodeStats nodeId={nodeId!} />
+      <div>
       {struct !== StructType.Source && (
         <Handle type={"target"} position={Position.Left} />
       )}
@@ -88,6 +98,7 @@ export const StyledNode = ({ struct, label, name, info }: ITestNodeProps) => {
           value={value}
           onChange={onChange}
         />
+      </div>
       </div>
     </div>
   );

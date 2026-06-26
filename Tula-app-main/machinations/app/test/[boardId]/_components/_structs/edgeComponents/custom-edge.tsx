@@ -1,6 +1,8 @@
 import { useChangeEdgeType } from "@/app/store/use-custom-edge";
 import useStore from "@/app/store/store";
 import React, { useEffect, useState } from "react";
+import { SimulationEdgeStats } from "@/app/test/[boardId]/_components/simulation/SimulationEdgeStats";
+import { useSimulationResults } from "@/app/store/use-simulation-results";
 
 import {
   BaseEdge,
@@ -30,7 +32,24 @@ export default function CustomEdge(props: EdgeProps) {
     targetPosition,
     id,
     data: initalValue,
+    source,
+    target,
   } = props;
+
+  const transitionProbability = useSimulationResults((state) =>
+    state.getEdgeTransition(source, target)
+  );
+  const isMarkovActive = useSimulationResults(
+    (state) => state.isActive && state.mode === "MARKOV_CHAIN"
+  );
+  const edgeStrokeWidth =
+    isMarkovActive && transitionProbability !== undefined
+      ? 1.5 + transitionProbability * 4
+      : undefined;
+  const edgeStyle =
+    edgeStrokeWidth !== undefined
+      ? { strokeWidth: edgeStrokeWidth, stroke: "#7c3aed" }
+      : undefined;
 
   const [inputValue, setInputValue] = useState<number>(initalValue ?? 1);
   const [edgePath, labelX, labelY] = getBezierPath({
@@ -77,9 +96,15 @@ export default function CustomEdge(props: EdgeProps) {
 
   return (
     <>
-      {currentType === "SmoothStep" && <StepEdge {...props} />}
-      {currentType === "Default" && <BaseEdge path={basePath} {...props} />}
-      {currentType == "Bezier" && <BezierEdge {...props} />}
+      {currentType === "SmoothStep" && (
+        <StepEdge {...props} style={{ ...props.style, ...edgeStyle }} />
+      )}
+      {currentType === "Default" && (
+        <BaseEdge path={basePath} {...props} style={{ ...props.style, ...edgeStyle }} />
+      )}
+      {currentType == "Bezier" && (
+        <BezierEdge {...props} style={{ ...props.style, ...edgeStyle }} />
+      )}
       <EdgeLabelRenderer>
         <div
           style={{
@@ -105,6 +130,12 @@ export default function CustomEdge(props: EdgeProps) {
             </p>
           )}
         </div>
+        <SimulationEdgeStats
+          sourceId={source}
+          targetId={target}
+          labelX={labelX}
+          labelY={labelY}
+        />
       </EdgeLabelRenderer>
     </>
   );

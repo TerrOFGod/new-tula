@@ -18,7 +18,10 @@ import "./../style-test.css";
 import { useRenameModal } from "@/app/store/use-rename-modal";
 import BoardInfoModal from "./BoardInfoModal/BoardInfoModal";
 import { ToolButton } from "./ui/ToolButton";
-import { FileJson2, LayoutDashboard, HistoryIcon } from "lucide-react";
+import { FileJson2, LayoutDashboard, HistoryIcon, Rocket } from "lucide-react";
+import { RunSimulationPanel } from "./panels/RunSimulationPanel";
+import { SimulationResultsPanel } from "./panels/SimulationResultsPanel";
+import { useSimulationResults } from "@/app/store/use-simulation-results";
 import { Loading } from "@/components/loading";
 import { useVersionsHistory } from "@/app/hooks/useVersionsHistory";
 import { Id } from "@/convex/_generated/dataModel";
@@ -68,6 +71,8 @@ const Flow = ({ boardId }: FlowProps) => {
   const { isVisibleEditor, setIsVisisble, isVisibleBoard, setIsVisisbleBoard } =
     useRenameModal();
   const [isVisibleHistory, setIsVisisbleHistory] = useState(false);
+  const [isSimulationOpen, setIsSimulationOpen] = useState(false);
+  const isSimulationActive = useSimulationResults((state) => state.isActive);
   const { analytics, setAnalytics } = useChangeEdgeType();
   const [menu, setMenu] = useState<IContextMenu | null>(null);
   const ref = useRef(null);
@@ -188,10 +193,23 @@ const Flow = ({ boardId }: FlowProps) => {
               isActive={false}
               icon={HistoryIcon}
             />
+            <ToolButton
+              label="Run Simulation"
+              onClick={() => setIsSimulationOpen(true)}
+              isActive={false}
+              icon={Rocket}
+              background="#2563eb"
+            />
           </div>
         </Panel>
 
-        {!analytics && !isVisibleBoard && isVisibleHistory && (
+        <RunSimulationPanel
+          boardId={boardId}
+          open={isSimulationOpen}
+          onOpenChange={setIsSimulationOpen}
+        />
+
+        {!analytics && !isVisibleBoard && isVisibleHistory && !isSimulationActive && (
           <Panel position="top-right" className="info_panel">
             <HistoryModal
               boardId={boardId}
@@ -201,11 +219,12 @@ const Flow = ({ boardId }: FlowProps) => {
           </Panel>
         )}
 
-        {!analytics && !isVisibleHistory && isVisibleBoard && (
+        {!analytics && !isVisibleHistory && isVisibleBoard && !isSimulationActive && (
           <Panel position="top-right" className="info_panel">
             <BoardInfoModal boardId={boardId} handleSaveVersion={manualSave} />
           </Panel>
         )}
+        <SimulationResultsPanel />
         <Background color="blue" gap={16} className="bg-blue-100" />
         {analytics && <Metrics />}
         <BottomPanel />

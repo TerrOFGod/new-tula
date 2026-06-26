@@ -68,3 +68,62 @@
     margin-top: 2px;
     white-space: pre-line;
 }
+
+.simulation-node-wrapper {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+.simulation-node-stats {
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    pointer-events: none;
+}
+
+.sim-stat {
+    min-width: 28px;
+    padding: 2px 6px;
+    border-radius: 999px;
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 1.2;
+    text-align: center;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.8);
+}
+
+.sim-stat-visits {
+    background: #dbeafe;
+    color: #1d4ed8;
+}
+
+.sim-stat-prob {
+    background: #dcfce7;
+    color: #15803d;
+}
+
+.sim-stat-final {
+    background: #fef3c7;
+    color: #b45309;
+}
+
+.sim-stat-state {
+    background: #ede9fe;
+    color: #6d28d9;
+}
+
+.sim-stat-transition {
+    background: #f3e8ff;
+    color: #7c3aed;
+}
+
+.simulation-node-highlight > div > div,
+.simulation-node-highlight > div[style] {
+    box-shadow: 0 0 0 3px rgba(109, 40, 217, 0.25);
+}
